@@ -1,10 +1,11 @@
-﻿<UserControl x:Class="Project_Kitsune.Views.ShellPages.SearchPage"
+﻿<UserControl x:Class="Project_Kitsune.Views.ShellPages.SearchResultPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
              xmlns:system="clr-namespace:System;assembly=System.Runtime"
+             xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:local="clr-namespace:Project_Kitsune.Views.ShellPages"
              xmlns:vwp="clr-namespace:WpfToolkit.Controls;assembly=VirtualizingWrapPanel"
              mc:Ignorable="d"
@@ -26,83 +27,8 @@
             <Border CornerRadius="8" Style="{DynamicResource BorderClip}"
                     MouseLeftButtonUp="Music_MouseLeftButtonUp" BorderThickness="1"
                     ContextMenuOpening="ContextMenu_Opening"
+                    ContextMenu="{StaticResource MusicaContextMenu}"
                     Tag="{Binding DataContext.PlayerViewModel, RelativeSource={RelativeSource AncestorType=UserControl}}">
-
-                <Border.ContextMenu>
-                    <ContextMenu>
-                        <MenuItem ItemsSource="{Binding PlacementTarget.Tag.PlaylistsDisponiveis,
-                                  RelativeSource={RelativeSource AncestorType=ContextMenu}}">
-                            <MenuItem.Header>
-                                <Grid>
-                                    <TextBlock Text="{DynamicResource Str_AdicionarAPlaylist}" HorizontalAlignment="Left" VerticalAlignment="Center" />
-                                    <iconPacks:PackIconBoxIcons Kind="RegularListPlus" HorizontalAlignment="Right"
-                                                                VerticalAlignment="Center"
-                                                                Foreground="{DynamicResource TextPrimaryBrush}" Width="14" />
-                                </Grid>
-                            </MenuItem.Header>
-                            <MenuItem.ItemContainerStyle>
-                                <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
-                                    <Setter Property="Command"
-                                            Value="{Binding PlacementTarget.Tag.AdicionarAPlaylistCommand,
-                                            RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
-                                    <Setter Property="CommandParameter">
-                                        <Setter.Value>
-                                            <MultiBinding Converter="{StaticResource MusicaEPlaylistConverter}">
-                                                <Binding Path="PlacementTarget.DataContext"
-                                                         RelativeSource="{RelativeSource AncestorType=ContextMenu}" />
-                                                <Binding />
-                                            </MultiBinding>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                            </MenuItem.ItemContainerStyle>
-                            <MenuItem.ItemTemplate>
-                                <DataTemplate>
-                                    <TextBlock>
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="Text" Value="{Binding Name}" />
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding Name}" Value="Favoritos">
-                                                        <Setter Property="Text" Value="{DynamicResource Str_Favoritos}" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
-                                </DataTemplate>
-                            </MenuItem.ItemTemplate>
-                        </MenuItem>
-
-                        <MenuItem Command="{Binding PlacementTarget.Tag.EditarMusicaCommand,
-                                  RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                  CommandParameter="{Binding PlacementTarget.DataContext,
-                                  RelativeSource={RelativeSource AncestorType=ContextMenu}}">
-                            <MenuItem.Header>
-                                <Grid>
-                                    <TextBlock Text="{DynamicResource Str_Editar}" HorizontalAlignment="Left" VerticalAlignment="Center" />
-                                    <iconPacks:PackIconBoxIcons Kind="SolidPencil" HorizontalAlignment="Right"
-                                                                VerticalAlignment="Center"
-                                                                Foreground="{DynamicResource TextPrimaryBrush}" Width="14" />
-                                </Grid>
-                            </MenuItem.Header>
-                        </MenuItem>
-
-                        <MenuItem Command="{Binding PlacementTarget.Tag.PedirEliminarMusicaCommand,
-                                  RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                  CommandParameter="{Binding PlacementTarget.DataContext,
-                                  RelativeSource={RelativeSource AncestorType=ContextMenu}}">
-                            <MenuItem.Header>
-                                <Grid>
-                                    <TextBlock Text="{DynamicResource Str_Eliminar}" HorizontalAlignment="Left" VerticalAlignment="Center" />
-                                    <iconPacks:PackIconBoxIcons Kind="SolidTrashAlt" HorizontalAlignment="Right"
-                                                                VerticalAlignment="Center"
-                                                                Foreground="{DynamicResource TextError}" Width="14" />
-                                </Grid>
-                            </MenuItem.Header>
-                        </MenuItem>
-                    </ContextMenu>
-                </Border.ContextMenu>
                 <Grid>
                     <Grid Opacity="0.65">
                         <Grid.Style>
@@ -186,9 +112,6 @@
             </Border>
         </DataTemplate>
 
-        <DataTemplate x:Key="GrupoAlbum">
-        </DataTemplate>
-
         <DataTemplate x:Key="ArtistaCard">
             <Border Width="180" Height="220" Margin="6" CornerRadius="16"
                     ClipToBounds="True" BorderThickness="0"
@@ -260,7 +183,7 @@
                                 Style="{StaticResource BorderClip}">
                             <Grid>
                                 <Image Source="{Binding Capa, Converter={StaticResource BytesParaImagemConverter}, ConverterParameter=240}"
-                                       Stretch="UniformToFill" />
+                                       Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                 <iconPacks:PackIconBoxIcons Kind="RegularMusic" Width="32" Height="32"
                                                             Foreground="{DynamicResource TextMutedBrush}"
                                                             HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -322,7 +245,7 @@
                                 Style="{StaticResource BorderClip}">
                             <Grid>
                                 <Image Source="{Binding Capa, Converter={StaticResource BytesParaImagemConverter}, ConverterParameter=240}"
-                                       Stretch="UniformToFill" />
+                                       Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                 <iconPacks:PackIconBoxIcons Kind="RegularListMusic" Width="32" Height="32"
                                                             Foreground="{DynamicResource TextMutedBrush}"
                                                             HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -378,23 +301,46 @@
 
     <Grid Style="{StaticResource TransicaoEntrada}">
         <Grid.RowDefinitions>
-            <RowDefinition Height="auto" />
+            <RowDefinition Height="60" />
             <RowDefinition Height="100*" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="100*" />
         </Grid.ColumnDefinitions>
         <Grid Grid.Row="0">
-            <TextBlock Style="{StaticResource ConfigSectionTitle}" Margin="30,20,0,0"
+            <TextBlock Text="{Binding Titulo}" TextTrimming="CharacterEllipsis"
+                       Style="{StaticResource ConfigSectionTitle}" Margin="20,0"
                        FontSize="24" FontWeight="Bold"
                        FontFamily="{StaticResource FonteHiragino}"
                        Foreground="{DynamicResource TextPrimaryBrush}"
-                       VerticalAlignment="Center">
-                <Run Text="Resultado de" />
-                <Run Text="{Binding searchString, Mode=OneWay}" />
-            </TextBlock>
+                       VerticalAlignment="Center" />
         </Grid>
-        <ScrollViewer Grid.Row="1" Focusable="False" Template="{StaticResource MeuScrollViewer}" Padding="16" Margin="8,0">
+        <Grid Grid.Row="1" Margin="0">
+            <Grid.Style>
+                <Style TargetType="Grid">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding ResultadosMusica.Count}" Value="0" />
+                                <Condition Binding="{Binding ResultadosArtistas.Count}" Value="0" />
+                                <Condition Binding="{Binding ResultadosAlbuns.Count}" Value="0" />
+                                <Condition Binding="{Binding ResultadosPlaylists.Count}" Value="0" />
+                            </MultiDataTrigger.Conditions>
+                            <Setter Property="Visibility" Value="Visible" />
+                        </MultiDataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Grid.Style>
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <iconPacks:PackIconBoxIcons Kind="RegularSearchBig" Width="80" Height="80"
+                                            Foreground="{DynamicResource TextDisabledBrush}" HorizontalAlignment="Center"/>
+                <TextBlock Text="{Binding TextoSemResultados}" TextTrimming="CharacterEllipsis"
+                           Style="{StaticResource TituloSecao}" HorizontalAlignment="Center"
+                           Foreground="{DynamicResource TextDisabledBrush}" Margin="0,16"/>
+            </StackPanel>
+        </Grid>
+        <ScrollViewer Grid.Row="1" Focusable="False" Template="{StaticResource MeuScrollViewer}" Padding="16" Margin="8">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="25*" />
@@ -407,10 +353,14 @@
                 </Grid.ColumnDefinitions>
                 <!-- Músicas (lista, com scroll próprio para manter a virtualização) -->
                 <StackPanel Grid.Row="0" Style="{StaticResource SecaoStyle}" Tag="{Binding ResultadosMusica.Count}">
-                    <Grid>
-                        <TextBlock Text="{DynamicResource Str_Musicas}" Style="{StaticResource TituloSecao}" />
-                        <Button Command="{Binding VerMaisMusicasCommand}">
-                            Ver Mais
+                    <Grid Margin="0,8">
+                        <TextBlock Text="{DynamicResource Str_Musicas}" Margin="16,0" Style="{StaticResource TituloSecao}" VerticalAlignment="Center" HorizontalAlignment="Left" />
+                        <Button Command="{Binding VerMaisMusicasCommand}" HorizontalAlignment="Right"
+                                Visibility="{Binding verTodasMusicas, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                Style="{StaticResource IconButton}" Width="auto" FontSize="12" Padding="16,4"
+                                VerticalAlignment="Center"
+                                Height="30"  FontFamily="{StaticResource FonteInter}">
+                            <TextBlock Text="{DynamicResource Str_VerMais}" TextDecorations="Underline" />
                         </Button>
                     </Grid>
                     <ListBox Style="{x:Null}"
@@ -432,8 +382,17 @@
                 </StackPanel>
 
                 <!-- Artistas -->
-                <StackPanel Grid.Row="1" Grid.Column="0" Style="{StaticResource SecaoStyle}" Tag="{Binding ResultadosArtistas.Count}">
-                    <TextBlock Text="{DynamicResource Str_Artistas}" Style="{StaticResource TituloSecao}" />
+                <StackPanel Grid.Row="1" Grid.Column="0" Style="{StaticResource SecaoStyle}" Tag="{Binding ResultadosArtistas.Count}" Margin="0,16,0,0">
+                    <Grid Margin="0,8">
+                        <TextBlock Text="{DynamicResource Str_Artistas}" Margin="16,0" Style="{StaticResource TituloSecao}" />
+                        <Button Command="{Binding VerMaisArtistasCommand}" HorizontalAlignment="Right"
+                                Style="{StaticResource IconButton}" Width="auto" FontSize="12" Padding="16,4"
+                                VerticalAlignment="Center"
+                                Visibility="{Binding verTodosArtistas, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                Height="30"  FontFamily="{StaticResource FonteInter}">
+                            <TextBlock Text="{DynamicResource Str_VerMais}" TextDecorations="Underline" />
+                        </Button>
+                    </Grid>
                     <ItemsControl ItemsSource="{Binding ResultadosArtistas}"
                                   ItemTemplate="{StaticResource ArtistaCard}"
                                   ScrollViewer.CanContentScroll="True">
@@ -446,8 +405,17 @@
                 </StackPanel>
 
                 <!-- Álbuns -->
-                <StackPanel Grid.Row="2" Grid.Column="0" Style="{StaticResource SecaoStyle}" Tag="{Binding ResultadosAlbuns.Count}">
-                    <TextBlock Text="{DynamicResource Str_Albuns}" Style="{StaticResource TituloSecao}" />
+                <StackPanel Grid.Row="2" Grid.Column="0" Style="{StaticResource SecaoStyle}" Tag="{Binding ResultadosAlbuns.Count}" Margin="0,16,0,0">
+                    <Grid Margin="0,8">
+                        <TextBlock Text="{DynamicResource Str_Albuns}" Margin="16,0" Style="{StaticResource TituloSecao}" VerticalAlignment="Center" HorizontalAlignment="Left" />
+                        <Button Command="{Binding VerMaisAlbunsCommand}" HorizontalAlignment="Right"
+                                Visibility="{Binding verTodosAlbuns, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                Style="{StaticResource IconButton}" Width="auto" FontSize="12" Padding="16,4"
+                                VerticalAlignment="Center"
+                                Height="30"  FontFamily="{StaticResource FonteInter}">
+                            <TextBlock Text="{DynamicResource Str_VerMais}" TextDecorations="Underline" />
+                        </Button>
+                    </Grid>
                     <ItemsControl ItemsSource="{Binding ResultadosAlbuns}"
                                   ItemTemplate="{StaticResource AlbumCard}"
                                   ScrollViewer.CanContentScroll="True">
@@ -460,8 +428,17 @@
                 </StackPanel>
 
                 <!-- Playlists -->
-                <StackPanel Grid.Row="3" Grid.Column="0" Style="{StaticResource SecaoStyle}" Tag="{Binding ResultadosPlaylists.Count}">
-                    <TextBlock Text="{DynamicResource Str_Playlists}" Style="{StaticResource TituloSecao}" />
+                <StackPanel Grid.Row="3" Grid.Column="0" Style="{StaticResource SecaoStyle}" Tag="{Binding ResultadosPlaylists.Count}" Margin="0,16,0,0">
+                    <Grid Margin="0,8">
+                        <TextBlock Text="{DynamicResource Str_Playlists}" Margin="16,0" Style="{StaticResource TituloSecao}" />
+                        <Button Command="{Binding VerMaisPlaylistCommand}" HorizontalAlignment="Right"
+                                Visibility="{Binding verTodosPlaylist, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                Style="{StaticResource IconButton}" Width="auto" FontSize="12" Padding="16,4"
+                                VerticalAlignment="Center"
+                                Height="30"  FontFamily="{StaticResource FonteInter}">
+                            <TextBlock Text="{DynamicResource Str_VerMais}" TextDecorations="Underline" />
+                        </Button>
+                    </Grid>
                     <ItemsControl ItemsSource="{Binding ResultadosPlaylists}"
                                   ItemTemplate="{StaticResource PlaylistCard}"
                                   ScrollViewer.CanContentScroll="True">

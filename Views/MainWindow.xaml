@@ -28,97 +28,6 @@
         <DataTemplate DataType="{x:Type vm:ShellViewModel}">
             <views:ShellView />
         </DataTemplate>
-
-        <ContextMenu  x:Key="MusicaContextMenu">
-            <MenuItem ItemsSource="{Binding PlacementTarget.Tag.PlaylistsDisponiveis,
-                      RelativeSource={RelativeSource AncestorType=ContextMenu}}">
-                <MenuItem.Header>
-                    <Grid>
-                        <TextBlock Text="{DynamicResource Str_AdicionarAPlaylist}" HorizontalAlignment="Left" VerticalAlignment="Center" />
-                        <iconPacks:PackIconBoxIcons Kind="RegularListPlus" HorizontalAlignment="Right"
-                                                    VerticalAlignment="Center"
-                                                    Foreground="{DynamicResource TextPrimaryBrush}" Width="14" />
-                    </Grid>
-                </MenuItem.Header>
-                <MenuItem.ItemContainerStyle>
-                    <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
-                        <Setter Property="Command"
-                                Value="{Binding PlacementTarget.Tag.AdicionarAPlaylistCommand,
-                                RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
-                        <Setter Property="CommandParameter">
-                            <Setter.Value>
-                                <MultiBinding Converter="{StaticResource MusicaEPlaylistConverter}">
-                                    <Binding Path="PlacementTarget.DataContext"
-                                             RelativeSource="{RelativeSource AncestorType=ContextMenu}" />
-                                    <Binding />
-                                </MultiBinding>
-                            </Setter.Value>
-                        </Setter>
-                    </Style>
-                </MenuItem.ItemContainerStyle>
-                <MenuItem.ItemTemplate>
-                    <DataTemplate>
-                        <TextBlock>
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Text" Value="{Binding Name}" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Name}" Value="Favoritos">
-                                            <Setter Property="Text" Value="{DynamicResource Str_Favoritos}" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                    </DataTemplate>
-                </MenuItem.ItemTemplate>
-            </MenuItem>
-
-            <MenuItem Command="{Binding PlacementTarget.Tag.EditarMusicaCommand,
-                      RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                      CommandParameter="{Binding PlacementTarget.DataContext,
-                      RelativeSource={RelativeSource AncestorType=ContextMenu}}">
-                <MenuItem.Header>
-                    <Grid>
-                        <TextBlock Text="{DynamicResource Str_Editar}" HorizontalAlignment="Left" VerticalAlignment="Center" />
-                        <iconPacks:PackIconBoxIcons Kind="SolidPencil" HorizontalAlignment="Right"
-                                                    VerticalAlignment="Center"
-                                                    Foreground="{DynamicResource TextPrimaryBrush}" Width="14" />
-                    </Grid>
-                </MenuItem.Header>
-            </MenuItem>
-
-            <MenuItem Command="{Binding PlacementTarget.Tag.PedirEliminarMusicaCommand,
-                      RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                      CommandParameter="{Binding PlacementTarget.DataContext,
-                      RelativeSource={RelativeSource AncestorType=ContextMenu}}">
-                <MenuItem.Header>
-                    <Grid>
-                        <TextBlock Text="{DynamicResource Str_Eliminar}" HorizontalAlignment="Left" VerticalAlignment="Center" />
-                        <iconPacks:PackIconBoxIcons Kind="SolidTrashAlt" HorizontalAlignment="Right"
-                                                    VerticalAlignment="Center"
-                                                    Foreground="{DynamicResource TextError}" Width="14" />
-                    </Grid>
-                </MenuItem.Header>
-            </MenuItem>
-        </ContextMenu>
-
-        <Style x:Key="WinCaptionStyle" TargetType="Button">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="Width" Value="47" />
-            <Setter Property="Height" Value="32" />
-            <Setter Property="FontSize" Value="10" />
-            <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
     </Window.Resources>
 
     <Window.Style>
@@ -140,29 +49,27 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <DockPanel x:Name="RootPanel" Grid.Row="0" Background="{DynamicResource SurfaceBrush}" Margin="0" Height="Auto" VerticalAlignment="Top">
+        <DockPanel x:Name="RootPanel" Grid.Row="0" Background="{DynamicResource SurfaceBrush}" Margin="0" Height="46" VerticalAlignment="Top">
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="25*" />
+                    <ColumnDefinition Width="50*" />
+                    <ColumnDefinition Width="25*" />
                 </Grid.ColumnDefinitions>
 
                 <!-- タイトル文字列（WindowChromeがnullのときも出たまま） -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="8,0">
-                    <TextBlock Text="Kitsune Player"
-                               Foreground="{DynamicResource TextSecondaryBrush}" FontFamily="{StaticResource FonteHiragino}"
-                               VerticalAlignment="Center" Margin="8,0"
-                               FontSize="12" TextTrimming="CharacterEllipsis" />
+                    <Rectangle Width="52" Height="35" Fill="{DynamicResource TextMutedBrush}"/>
                 </StackPanel>
 
                 <!-- トグルボタン（必要に応じて表示/非表示を切り替え可能） -->
 
-                <Grid x:Name="PesquisaRoot" Grid.Column="1" Width="Auto" Margin="0,8,0,0"
+                <Grid x:Name="PesquisaRoot" Grid.Column="1" Width="Auto"
+                      VerticalAlignment="Center" HorizontalAlignment="Center"
                       WindowChrome.IsHitTestVisibleInChrome="True">
 
                     <TextBox x:Name="SearBar" Style="{StaticResource PesquisaTextBox}"
-                             Width="360" Height="32" Grid.Column="1"
+                             Width="360" Height="34" Grid.Column="1"
                              Text="{Binding TextoPesquisa, UpdateSourceTrigger=PropertyChanged}"
                              FontFamily="{DynamicResource FonteInter}"
                              WindowChrome.IsHitTestVisibleInChrome="True"
@@ -357,6 +264,17 @@
                         <Popup.Style>
                             <Style TargetType="Popup">
                                 <Setter Property="IsOpen" Value="{Binding PesquisaAberta, Mode=OneWay}" />
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding ResultadosMusica.Count}" Value="0" />
+                                            <Condition Binding="{Binding ResultadosArtistas.Count}" Value="0" />
+                                            <Condition Binding="{Binding ResultadosAlbuns.Count}" Value="0" />
+                                            <Condition Binding="{Binding ResultadosPlaylists.Count}" Value="0" />
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter  Property="IsOpen" Value="False" />
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
                             </Style>
                         </Popup.Style>
                         <Grid  Width="{Binding ActualWidth, ElementName=SearBar}">
@@ -400,26 +318,6 @@
                                                       Tag="{Binding AbrirPlaylistCommand}"
                                                       ItemTemplate="{StaticResource PlaylistResultadoTemplate}" />
                                     </StackPanel>
-                                    <Grid Margin="16,8">
-                                        <Grid.Style>
-                                            <Style TargetType="Grid">
-                                                <Setter  Property="Visibility" Value="Collapsed" />
-                                                <Style.Triggers>
-                                                    <MultiDataTrigger>
-                                                        <MultiDataTrigger.Conditions>
-                                                            <Condition Binding="{Binding ResultadosMusica.Count}" Value="0" />
-                                                            <Condition Binding="{Binding ResultadosArtistas.Count}" Value="0" />
-                                                            <Condition Binding="{Binding ResultadosAlbuns.Count}" Value="0" />
-                                                            <Condition Binding="{Binding ResultadosPlaylists.Count}" Value="0" />
-                                                        </MultiDataTrigger.Conditions>
-                                                        <Setter  Property="Visibility" Value="Visible" />
-                                                    </MultiDataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Grid.Style>
-                                        <TextBlock Text="Sem Resultados..." Foreground="{DynamicResource TextMutedBrush}" FontSize="12" FontFamily="{StaticResource FonteInter}" />
-                                        <!--<iconPacks:PackIconBoxIcons Kind="RegularSearch" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" />-->
-                                    </Grid>
                                 </StackPanel>
                             </Border>
                         </Grid>
@@ -427,7 +325,8 @@
                 </Grid>
 
                 <!-- コントロールボックス（★ UseCustomTitleBar が False のときは非表示にする） -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top" Margin="0" Background="Transparent">
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top"
+                            HorizontalAlignment="Right" Margin="0" Background="Transparent">
 
                     <!-- 最小化 -->
                     <Button x:Name="MinimizeButton"
@@ -456,7 +355,7 @@
             </Grid>
         </DockPanel>
         <!-- ===== CONTEÚDO (Loading / Shell) ===== -->
-        <Grid Grid.Row="1" ClipToBounds="True" Background="{DynamicResource SurfaceBrush}" Margin="0,4,0,0"
+        <Grid Grid.Row="1" ClipToBounds="True" Background="{DynamicResource SurfaceBrush}"
               PreviewMouseDown="Window_PreviewMouseDown">
             <!--===== PAGINAS =====-->
             <ContentControl Content="{Binding CurrentView}" ClipToBounds="True" />

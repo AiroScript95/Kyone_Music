@@ -1,5 +1,7 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.Extensions.DependencyInjection;
 using Project_Kitsune.Models;
+using Project_Kitsune.ViewModels;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -19,6 +21,8 @@ namespace Project_Kitsune.Services
         public DatabaseService databaseService { get; set; } = App.ServiceProvider.GetRequiredService<DatabaseService>();
 
         public event Action? BibliotecaCarregada;
+
+        public event Action<List<string>>? PastasEmFalta;
 
         public ObservableCollection<Music> Musicas { get; } = new();
 
@@ -97,8 +101,7 @@ namespace Project_Kitsune.Services
                     if (musicaCache != null && dataModificacaoCache == dataModificacaoAtual) {
                         musicaCache.DataAdicionado = fileInfo.CreationTimeUtc;
 
-                        string caminhoLrc = Path.Combine(caminhoPasta, Path.GetFileNameWithoutExtension(item) + ".lrc");
-                        musicaCache.TemLetraDisponivel = File.Exists(caminhoLrc) || musicaCache.TemLetraDisponivel;
+                        musicaCache.TemLetraDisponivel = TemLrcComConteudo(item);
 
                         music = musicaCache;
                     }
@@ -106,7 +109,6 @@ namespace Project_Kitsune.Services
                         using (TagLib.File tagFile = TagLib.File.Create(item)) {
                             byte[] imagem = Array.Empty<byte>();
                             if (tagFile.Tag.Pictures.Length > 0) imagem = tagFile.Tag.Pictures[0].Data.Data;
-                            string caminhoLrc = Path.Combine(caminhoPasta, Path.GetFileNameWithoutExtension(item) + ".lrc");
 
                             music = new Music
                             {
@@ -121,7 +123,7 @@ namespace Project_Kitsune.Services
                                 VezesTocada = databaseService.ObterVezesTocada(item),
                                 Gosto = musicaCache?.Gosto ?? false,
                                 Image = imagem,
-                                TemLetraDisponivel = File.Exists(caminhoLrc) || !string.IsNullOrWhiteSpace(tagFile.Tag.Lyrics)
+                                TemLetraDisponivel = TemLrcComConteudo(item)
                             };
                         }
 
@@ -185,9 +187,15 @@ namespace Project_Kitsune.Services
             }
         }
 
+        public static bool TemLrcComConteudo(string caminhoMusica)
+        {
+            FileInfo lrc = new(Path.ChangeExtension(caminhoMusica, ".lrc"));
+            return lrc.Exists && lrc.Length > 0;
+        }
+
         // ───────────────────────────── Letras ─────────────────────────────
 
-        public async Task<Letra?> ObterLetra(Music musica)
+        public async Task<Letra?> ObterLetra(Music musica, CancellationToken token)
         {
             string pasta = Path.GetDirectoryName(musica.Caminho)!;
             string nomeBase = Path.GetFileNameWithoutExtension(musica.Caminho);
@@ -196,12 +204,14 @@ namespace Project_Kitsune.Services
             // 1. .lrc local tem prioridade (edição manual do utilizador)
             if (File.Exists(caminhoLrcKitsune)) {
                 try {
-                    string conteudo = await File.ReadAllTextAsync(caminhoLrcKitsune);
+                    string conteudo = await File.ReadAllTextAsync(caminhoLrcKitsune, token);
                     if (!string.IsNullOrEmpty(conteudo)) {
                         musica.TemLetraDisponivel = true;
+
                         return ParsearLetra(conteudo, FonteLetra.ArquivoLrc, caminhoLrcKitsune);
                     }
                 }
+                catch (OperationCanceledException) { throw; }
                 catch (Exception ex) {
                     Debug.WriteLine($"ERRO ao ler .lrc: {ex.Message}");
                 }
@@ -209,27 +219,31 @@ namespace Project_Kitsune.Services
 
             // 2. busca na API LRCLIB
             try {
-                string? letraLrclib = await BuscarLetraLrclib(musica.Titulo, musica.Artista, musica.Album, musica.Duracao);
+                string? letraLrclib = await BuscarLetraLrclib(musica.Titulo, musica.Artista, musica.Album, musica.Duracao, token);
                 if (!string.IsNullOrWhiteSpace(letraLrclib)) {
+                    token.ThrowIfCancellationRequested();
                     await File.WriteAllTextAsync(caminhoLrcKitsune, letraLrclib);
                     musica.TemLetraDisponivel = true;
                     Debug.WriteLine($"[Letra] {musica.Titulo} - {musica.Artista}: LRCLIB");
                     return ParsearLetra(letraLrclib, FonteLetra.Lrclib, caminhoLrcKitsune);
                 }
             }
+            catch (OperationCanceledException) { throw; }
             catch (Exception ex) {
                 Debug.WriteLine($"ERRO ao buscar letra na LRCLIB: {ex.Message}");
             }
 
             try {
-                string? letraKugou = await BuscarLetraKugou(musica.Titulo, musica.Artista, musica.Duracao);
+                string? letraKugou = await BuscarLetraKugou(musica.Titulo, musica.Artista, musica.Duracao, token);
                 if (!string.IsNullOrWhiteSpace(letraKugou)) {
+                    token.ThrowIfCancellationRequested();
                     await File.WriteAllTextAsync(caminhoLrcKitsune, letraKugou);
                     musica.TemLetraDisponivel = true;
                     Debug.WriteLine($"[Letra] {musica.Titulo} - {musica.Artista}: Kugou");
                     return ParsearLetra(letraKugou, FonteLetra.Kugou, caminhoLrcKitsune);
                 }
             }
+            catch (OperationCanceledException) { throw; }
             catch (Exception ex) {
                 Debug.WriteLine($"ERRO ao buscar letra na Kugou: {ex.Message}");
             }
@@ -257,15 +271,15 @@ namespace Project_Kitsune.Services
             return null;
         }
 
-        private static async Task<string?> LerJsonAsync(string url, string userAgent)
+        private static async Task<string?> LerJsonAsync(string url, string userAgent, CancellationToken token)
         {
             using var pedido = new HttpRequestMessage(HttpMethod.Get, url);
             pedido.Headers.UserAgent.ParseAdd(userAgent);
 
-            using HttpResponseMessage resposta = await _httpClient.SendAsync(pedido);
+            using HttpResponseMessage resposta = await _httpClient.SendAsync(pedido, token);
             if (!resposta.IsSuccessStatusCode) return null;
 
-            return await resposta.Content.ReadAsStringAsync();
+            return await resposta.Content.ReadAsStringAsync(token);
         }
 
         private static bool Desconhecido(string valor) =>
@@ -347,18 +361,16 @@ namespace Project_Kitsune.Services
 
         // ───────────────────────────── LRCLIB ─────────────────────────────
 
-        private async Task<string?> BuscarLetraLrclib(string titulo, string artista, string album, TimeSpan duracao)
+        private async Task<string?> BuscarLetraLrclib(string titulo, string artista, string album, TimeSpan duracao, CancellationToken token)
         {
             try {
-                // 1. correspondência exata (só faz sentido com artista conhecido)
                 if (!Desconhecido(artista)) {
-                    string? letra = await LrclibGet(titulo, artista, album, duracao);
+                    string? letra = await LrclibGet(titulo, artista, album, duracao, token);
                     if (letra != null) return letra;
                 }
-
-                // 2. fallback: pesquisa mais solta, escolhe por duração
-                return await LrclibSearch(titulo, artista, duracao);
+                return await LrclibSearch(titulo, artista, duracao, token);
             }
+            catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
             catch (TaskCanceledException) {
                 Debug.WriteLine("LRCLIB: tempo limite excedido");
             }
@@ -389,7 +401,7 @@ namespace Project_Kitsune.Services
             return null;
         }
 
-        private async Task<string?> LrclibGet(string titulo, string artista, string album, TimeSpan duracao)
+        private async Task<string?> LrclibGet(string titulo, string artista, string album, TimeSpan duracao, CancellationToken token)
         {
             string url = $"https://lrclib.net/api/get?track_name={Uri.EscapeDataString(titulo)}" +
                          $"&artist_name={Uri.EscapeDataString(artista)}" +
@@ -399,20 +411,20 @@ namespace Project_Kitsune.Services
             if (!Desconhecido(album))
                 url += $"&album_name={Uri.EscapeDataString(album)}";
 
-            string? json = await LerJsonAsync(url, UserAgentKitsune);
+            string? json = await LerJsonAsync(url, UserAgentKitsune, token);
             if (json == null) return null;
 
             using JsonDocument doc = JsonDocument.Parse(json);
             return ExtrairLetraLrclib(doc.RootElement);
         }
 
-        private async Task<string?> LrclibSearch(string titulo, string artista, TimeSpan duracao)
+        private async Task<string?> LrclibSearch(string titulo, string artista, TimeSpan duracao, CancellationToken token)
         {
             string url = $"https://lrclib.net/api/search?track_name={Uri.EscapeDataString(titulo)}";
             if (!Desconhecido(artista))
                 url += $"&artist_name={Uri.EscapeDataString(artista)}";
 
-            string? json = await LerJsonAsync(url, UserAgentKitsune);
+            string? json = await LerJsonAsync(url, UserAgentKitsune, token);
             if (json == null) return null;
 
             using JsonDocument doc = JsonDocument.Parse(json);
@@ -452,7 +464,7 @@ namespace Project_Kitsune.Services
 
         // ───────────────────────────── Kugou ─────────────────────────────
 
-        private async Task<string?> BuscarLetraKugou(string titulo, string artista, TimeSpan duracao)
+        private async Task<string?> BuscarLetraKugou(string titulo, string artista, TimeSpan duracao, CancellationToken token)
         {
             bool artistaConhecido = !Desconhecido(artista);
             string termo = Uri.EscapeDataString(artistaConhecido ? $"{artista} - {titulo}" : titulo);
@@ -460,7 +472,7 @@ namespace Project_Kitsune.Services
             string urlBusca = $"https://lyrics.kugou.com/search?ver=1&man=yes&client=pc&keyword={termo}&duration={duracaoMs}&hash=";
 
             try {
-                string? jsonBusca = await LerJsonAsync(urlBusca, UserAgentBrowser);
+                string? jsonBusca = await LerJsonAsync(urlBusca, UserAgentBrowser, token);
                 if (jsonBusca == null) return null;
 
                 (string Id, string AccessKey)? candidato = EscolherCandidatoKugou(jsonBusca, titulo, artista, duracao);
@@ -473,7 +485,7 @@ namespace Project_Kitsune.Services
                                   $"&id={Uri.EscapeDataString(candidato.Value.Id)}" +
                                   $"&accesskey={Uri.EscapeDataString(candidato.Value.AccessKey)}" +
                                   $"&fmt=lrc&charset=utf8";
-                string? jsonLetra = await LerJsonAsync(urlLetra, UserAgentBrowser);
+                string? jsonLetra = await LerJsonAsync(urlLetra, UserAgentBrowser, token);
                 if (jsonLetra == null) return null;
 
                 using JsonDocument doc = JsonDocument.Parse(jsonLetra);
@@ -483,6 +495,7 @@ namespace Project_Kitsune.Services
                     return Encoding.UTF8.GetString(bytes).TrimStart('\uFEFF');
                 }
             }
+            catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
             catch (TaskCanceledException) { Debug.WriteLine("Kugou: tempo limite excedido"); }
             catch (HttpRequestException ex) { Debug.WriteLine($"Kugou: erro de rede - {ex.Message}"); }
             catch (JsonException ex) { Debug.WriteLine($"Kugou: JSON inválido - {ex.Message}"); }
@@ -557,10 +570,14 @@ namespace Project_Kitsune.Services
 
         public async Task CarregarBibliotecaAsync(IEnumerable<string> pastas, string criterio, bool descendente)
         {
+            var pastasValidas = pastas.Where(p => !string.IsNullOrWhiteSpace(p)).ToList();
+            var emFalta = pastasValidas.Where(p => !Directory.Exists(p)).ToList();
+            if (emFalta.Count > 0) PastasEmFalta?.Invoke(emFalta);
+
             var todasMusicas = new List<Music>();
             object lockMusicas = new();
 
-            var tarefas = pastas.Where(p => !string.IsNullOrWhiteSpace(p)).Select(pasta => Task.Run(() =>
+            var tarefas = pastasValidas.Select(pasta => Task.Run(() =>
             {
                 LerMusicasDaPasta(pasta, lote => { lock (lockMusicas) { todasMusicas.AddRange(lote); } });
             })).ToList();
@@ -573,6 +590,7 @@ namespace Project_Kitsune.Services
             {
                 AtualizarMusicas(ordenadas);
             });
+            WeakReferenceMessenger.Default.Send(new BibliotecaAlteradaMessage());
             BibliotecaCarregada?.Invoke();
         }
 
@@ -643,6 +661,7 @@ namespace Project_Kitsune.Services
 
             Music? musica = LerMusicaPorCaminho(e.FullPath);
             if (musica == null) return;
+            databaseService.SalvarMusicaCompleta(musica, new FileInfo(e.FullPath).LastWriteTimeUtc.Ticks);
 
             Application.Current.Dispatcher.Invoke(() =>
             {
@@ -677,6 +696,7 @@ namespace Project_Kitsune.Services
                 bool jaExiste = Musicas.Any(m => string.Equals(m.Caminho, musicaNova.Caminho, StringComparison.OrdinalIgnoreCase));
                 if (!jaExiste) {
                     Musicas.Add(musicaNova);
+                    databaseService.SalvarMusicaCompleta(musicaNova, new FileInfo(e.FullPath).LastWriteTimeUtc.Ticks);
                     ReordenarMusicas();
                 }
             });
@@ -752,6 +772,27 @@ namespace Project_Kitsune.Services
             musica.Artista = novoArtista;
             musica.Album = novoAlbum;
             musica.Genero = novoGenero;
+        }
+
+        public async Task SalvarLetra(string caminhoLrc, string texto)
+        {
+            // texto vazio e ficheiro inexistente: não cria um .lrc vazio
+            if (string.IsNullOrWhiteSpace(texto) && !File.Exists(caminhoLrc)) return;
+
+            string tmp = caminhoLrc + ".tmp";
+
+            try {
+                await File.WriteAllTextAsync(tmp, texto);
+
+                if (File.Exists(caminhoLrc))
+                    File.Replace(tmp, caminhoLrc, null);
+                else
+                    File.Move(tmp, caminhoLrc);
+            }
+            catch {
+                if (File.Exists(tmp)) File.Delete(tmp);
+                throw;
+            }
         }
     }
 }

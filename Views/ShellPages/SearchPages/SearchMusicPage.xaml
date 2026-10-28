@@ -6,6 +6,7 @@
              xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
              xmlns:system="clr-namespace:System;assembly=System.Runtime"
              xmlns:local="clr-namespace:Project_Kitsune.Views.ShellPages"
+             xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:vwp="clr-namespace:WpfToolkit.Controls;assembly=VirtualizingWrapPanel"
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800">
@@ -15,83 +16,8 @@
             <Border CornerRadius="8" Style="{DynamicResource BorderClip}"
                     MouseLeftButtonUp="Music_MouseLeftButtonUp" BorderThickness="1"
                     ContextMenuOpening="ContextMenu_Opening"
+                    ContextMenu="{StaticResource MusicaContextMenu}"
                     Tag="{Binding DataContext.PlayerViewModel, RelativeSource={RelativeSource AncestorType=UserControl}}">
-
-                <Border.ContextMenu>
-                    <ContextMenu>
-                        <MenuItem ItemsSource="{Binding PlacementTarget.Tag.PlaylistsDisponiveis,
-                                  RelativeSource={RelativeSource AncestorType=ContextMenu}}">
-                            <MenuItem.Header>
-                                <Grid>
-                                    <TextBlock Text="{DynamicResource Str_AdicionarAPlaylist}" HorizontalAlignment="Left" VerticalAlignment="Center" />
-                                    <iconPacks:PackIconBoxIcons Kind="RegularListPlus" HorizontalAlignment="Right"
-                                                                VerticalAlignment="Center"
-                                                                Foreground="{DynamicResource TextPrimaryBrush}" Width="14" />
-                                </Grid>
-                            </MenuItem.Header>
-                            <MenuItem.ItemContainerStyle>
-                                <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
-                                    <Setter Property="Command"
-                                            Value="{Binding PlacementTarget.Tag.AdicionarAPlaylistCommand,
-                                            RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
-                                    <Setter Property="CommandParameter">
-                                        <Setter.Value>
-                                            <MultiBinding Converter="{StaticResource MusicaEPlaylistConverter}">
-                                                <Binding Path="PlacementTarget.DataContext"
-                                                         RelativeSource="{RelativeSource AncestorType=ContextMenu}" />
-                                                <Binding />
-                                            </MultiBinding>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                            </MenuItem.ItemContainerStyle>
-                            <MenuItem.ItemTemplate>
-                                <DataTemplate>
-                                    <TextBlock>
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="Text" Value="{Binding Name}" />
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding Name}" Value="Favoritos">
-                                                        <Setter Property="Text" Value="{DynamicResource Str_Favoritos}" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
-                                </DataTemplate>
-                            </MenuItem.ItemTemplate>
-                        </MenuItem>
-
-                        <MenuItem Command="{Binding PlacementTarget.Tag.EditarMusicaCommand,
-                                  RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                  CommandParameter="{Binding PlacementTarget.DataContext,
-                                  RelativeSource={RelativeSource AncestorType=ContextMenu}}">
-                            <MenuItem.Header>
-                                <Grid>
-                                    <TextBlock Text="{DynamicResource Str_Editar}" HorizontalAlignment="Left" VerticalAlignment="Center" />
-                                    <iconPacks:PackIconBoxIcons Kind="SolidPencil" HorizontalAlignment="Right"
-                                                                VerticalAlignment="Center"
-                                                                Foreground="{DynamicResource TextPrimaryBrush}" Width="14" />
-                                </Grid>
-                            </MenuItem.Header>
-                        </MenuItem>
-
-                        <MenuItem Command="{Binding PlacementTarget.Tag.PedirEliminarMusicaCommand,
-                                  RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                  CommandParameter="{Binding PlacementTarget.DataContext,
-                                  RelativeSource={RelativeSource AncestorType=ContextMenu}}">
-                            <MenuItem.Header>
-                                <Grid>
-                                    <TextBlock Text="{DynamicResource Str_Eliminar}" HorizontalAlignment="Left" VerticalAlignment="Center" />
-                                    <iconPacks:PackIconBoxIcons Kind="SolidTrashAlt" HorizontalAlignment="Right"
-                                                                VerticalAlignment="Center"
-                                                                Foreground="{DynamicResource TextError}" Width="14" />
-                                </Grid>
-                            </MenuItem.Header>
-                        </MenuItem>
-                    </ContextMenu>
-                </Border.ContextMenu>
                 <Grid>
                     <Grid Opacity="0.65">
                         <Grid.Style>
@@ -175,17 +101,37 @@
             </Border>
         </DataTemplate>
     </UserControl.Resources>
-    <Grid>
+    <Grid Style="{StaticResource TransicaoEntrada}">
         <Grid.RowDefinitions>
-            <RowDefinition Height="auto" />
+            <RowDefinition Height="70" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
+        <Grid Grid.Row="0">
+            <StackPanel Orientation="Horizontal">
+                <Button Command="{Binding VoltarCommand}"
+                        HorizontalAlignment="Left"
+                        Background="{DynamicResource SurfaceRaisedBrush}"
+                        BorderThickness="0"
+                        Width="40" Height="40"
+                        hc:BorderElement.CornerRadius="50"
+                        Foreground="{DynamicResource TextSecondaryBrush}"
+                        Margin="16,0,0,0" VerticalAlignment="Center">
+                    <iconPacks:PackIconBoxIcons Kind="SolidUndo" />
+                </Button>
+                <TextBlock Text="{Binding Titulo}" TextTrimming="CharacterEllipsis"
+                           Style="{StaticResource ConfigSectionTitle}" Margin="20,0,0,0"
+                           FontSize="24" FontWeight="Bold"
+                           FontFamily="{StaticResource FonteHiragino}"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           VerticalAlignment="Center" />
+            </StackPanel>
+        </Grid>
         <ListBox Style="{x:Null}"
                  Grid.Row="1"
                  ItemsSource="{Binding ResultadosMusica}"
                  ItemTemplate="{StaticResource MusicaResultadoTemplate}"
                  ItemContainerStyle="{StaticResource HoverListBoxItemStyle}"
-                 Margin="6,0"
+                 Margin="8" Padding="8"
                  Background="Transparent" BorderThickness="0"
                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                  ScrollViewer.CanContentScroll="True"

@@ -8,8 +8,7 @@
              xmlns:controls="clr-namespace:Project_Kitsune.Views.Controls"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              d:DataContext="{d:DesignInstance Type=shellpages:PlaylistDetailPageViewModel}"
-             mc:Ignorable="d"
-             d:DesignHeight="600" d:DesignWidth="900">
+             mc:Ignorable="d" d:DesignHeight="600" d:DesignWidth="900">
 
     <Grid Style="{StaticResource TransicaoEntrada}">
         <Grid>
@@ -30,7 +29,7 @@
                                     <BeginStoryboard>
                                         <Storyboard>
                                             <DoubleAnimation Storyboard.TargetProperty="Width"
-                                                             To="380"
+                                                             To="400"
                                                              Duration="0:0:0.05">
                                                 <DoubleAnimation.EasingFunction>
                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -104,10 +103,12 @@
                         </Border>
 
                         <StackPanel Grid.Column="1" VerticalAlignment="Bottom" Margin="20,0,0,0">
-                            <TextBlock FontSize="28" FontWeight="DemiBold"
-                                       FontFamily="{StaticResource FonteHiragino}"
+                            <TextBlock  FontSize="44" FontWeight="DemiBold"
+                                       FontFamily="{StaticResource FonteInter}"
                                        Foreground="{DynamicResource TextPrimaryBrush}"
-                                       MaxWidth="300"
+                                       MaxWidth="460"
+                                       Margin="0"
+                                       TextAlignment="Left"
                                        HorizontalAlignment="Left"
                                        TextTrimming="CharacterEllipsis">
                                 <TextBlock.Style>
@@ -122,7 +123,7 @@
                                 </TextBlock.Style>
                             </TextBlock>
 
-                            <StackPanel Orientation="Horizontal" Margin="0,4,0,12">
+                            <StackPanel Orientation="Horizontal" Margin="8,4,0,12">
                                 <TextBlock Foreground="{DynamicResource TextSecondaryBrush}"
                                            FontSize="15" FontWeight="DemiBold">
                                     <Run Text="{Binding NumMusicas, Mode=OneWay}" />
@@ -202,9 +203,8 @@
 
                                 <Border CornerRadius="8" MouseLeftButtonUp="StackPanel_MouseLeftButtonUp" Style="{DynamicResource BorderClip}"            ContextMenuOpening="ContextMenu_Opening"
                                         Tag="{Binding DataContext.PlayerViewModel, RelativeSource={RelativeSource AncestorType=UserControl}}">
-
                                     <Border.ContextMenu>
-                                        <ContextMenu Visibility="{Binding PlayerViewModel.MusicaAtual, Converter={StaticResource NullToVisibilityConverter}}">
+                                        <ContextMenu>
                                             <MenuItem ItemsSource="{Binding PlacementTarget.Tag.PlaylistsDisponiveis,
                                                       RelativeSource={RelativeSource AncestorType=ContextMenu}}">
                                                 <MenuItem.Header>
@@ -324,7 +324,7 @@
                                                        FontSize="14"
                                                        Foreground="{DynamicResource TextSecondaryBrush}"
                                                        HorizontalAlignment="Center"
-                                                       VerticalAlignment="Center" Margin="5,0,15,0">
+                                                       VerticalAlignment="Center" Margin="5,0,15,0" Visibility="Collapsed">
                                                 <TextBlock.Text>
                                                     <MultiBinding Converter="{StaticResource IndiceParaNumeroConverter}">
                                                         <Binding />

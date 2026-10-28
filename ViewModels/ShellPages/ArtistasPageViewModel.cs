@@ -12,30 +12,33 @@ namespace Project_Kitsune.ViewModels.ShellPages
     {
         [ObservableProperty] private List<GrupoMusicas> _artistas = new();
 
+        private readonly BibliotecaService biblioteca;
+
         private GrupoMusicas? _GrupoParaScroll;
 
-        public GrupoMusicas? GrupoParaScroll
-        {
+        public GrupoMusicas? GrupoParaScroll {
             get => _GrupoParaScroll;
-            set
-            {
+            set {
                 _GrupoParaScroll = value;
                 OnPropertyChanged();
             }
         }
 
-        public IEnumerable<string> Alfabeto { get; } = new[] { "&", "#" }.Concat(Enumerable.Range('A', 26).Select(c => ((char)c).ToString()));
+        public IEnumerable<string> Alfabeto { get; } = new[] { "&", "#" }.Concat(Enumerable.Range('A', 26).Select(c => ( (char)c ).ToString()));
 
         private readonly ShellViewModel _shell;
 
         public ArtistasPageViewModel(ShellViewModel shell)
         {
-            _shell = shell;
+            _shell = shell; 
+            biblioteca = App.ServiceProvider.GetRequiredService<BibliotecaService>();
+
             _ = CarregarAsync();
         }
 
         private async Task CarregarAsync()
         {
+            if (biblioteca.Musicas.Count == 0) return;
             var grupos = App.ServiceProvider.GetRequiredService<GruposService>();
             Artistas = await grupos.ObterArtistasAsync();
         }
@@ -47,17 +50,14 @@ namespace Project_Kitsune.ViewModels.ShellPages
             string primeiroElemento = StringInfo.GetNextTextElement(titulo);
 
             string decomposto;
-            try
-            {
+            try {
                 decomposto = primeiroElemento.Normalize(NormalizationForm.FormD);
             }
-            catch (ArgumentException)
-            {
+            catch (ArgumentException) {
                 return char.ToUpperInvariant(titulo[0]);
             }
 
-            foreach (char c in decomposto)
-            {
+            foreach (char c in decomposto) {
                 var categoria = CharUnicodeInfo.GetUnicodeCategory(c);
                 if (categoria != UnicodeCategory.NonSpacingMark)
                     return char.ToUpperInvariant(c);
@@ -71,19 +71,16 @@ namespace Project_Kitsune.ViewModels.ShellPages
         {
             GrupoMusicas? alvo;
 
-            if (letra == "#")
-            {
+            if (letra == "#") {
                 alvo = Artistas.FirstOrDefault(m =>
                     !string.IsNullOrEmpty(m.Nome) && char.IsAsciiDigit(NormalizarPrimeiraLetra(m.Nome)));
             }
-            else if (letra == "&")
-            {
+            else if (letra == "&") {
                 alvo = Artistas.FirstOrDefault(m =>
-                    string.IsNullOrEmpty(m.Nome) || (!char.IsAsciiLetter(NormalizarPrimeiraLetra(m.Nome))
-                    && !char.IsAsciiDigit(NormalizarPrimeiraLetra(m.Nome))));
+                    string.IsNullOrEmpty(m.Nome) || ( !char.IsAsciiLetter(NormalizarPrimeiraLetra(m.Nome))
+                    && !char.IsAsciiDigit(NormalizarPrimeiraLetra(m.Nome)) ));
             }
-            else
-            {
+            else {
                 char letraAlvo = char.ToUpperInvariant(letra[0]);
                 alvo = Artistas.FirstOrDefault(m =>
                     !string.IsNullOrEmpty(m.Nome) && NormalizarPrimeiraLetra(m.Nome) == letraAlvo);
@@ -95,7 +92,7 @@ namespace Project_Kitsune.ViewModels.ShellPages
         [RelayCommand]
         private void AbrirArtista(GrupoMusicas grupo)
         {
-            GrupoDetailPageViewModel detalhe = new(_shell, () => new ArtistasPageViewModel(_shell));
+            GrupoDetailPageViewModel detalhe = new(_shell, () => new ArtistasPageViewModel(_shell), true);
             detalhe.Carregar(grupo);
             _shell.CurrentPage = detalhe;
         }

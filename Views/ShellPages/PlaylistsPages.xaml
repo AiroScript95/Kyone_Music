@@ -16,12 +16,12 @@
     <Grid>
         <Grid Style="{StaticResource TransicaoEntrada}">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
+                <RowDefinition Height="60" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
             <!-- ===== BARRA ÚNICA NO TOPO ===== -->
-            <Grid Grid.Row="0" Margin="30,20">
+            <Grid Grid.Row="0" Margin="20,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
@@ -37,11 +37,10 @@
                 <Button Command="{Binding MostrarModalCommand}"
                         BorderThickness="0"
                         Cursor="Hand"
-                        hc:BorderElement.CornerRadius="20"
+                        hc:BorderElement.CornerRadius="16"
                         HorizontalAlignment="Right"
-                        VerticalAlignment="Center"
-                        MinHeight="40"
-                        MinWidth="200"
+                        Width="auto" Height="36"
+                        VerticalAlignment="Center" Padding="16,8"
                         Background="{DynamicResource SurfaceAltBrush}"
                         Foreground="{DynamicResource TextSecondaryBrush}">
                     <StackPanel HorizontalAlignment="Center"

@@ -10,20 +10,27 @@
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
-        <Border Background="{DynamicResource SurfaceAltBrush}" BorderBrush="{DynamicResource BorderBrush2}" BorderThickness="0,0,1,0"/>
-        <Grid MaxHeight="700" Margin="16,16,16,8" ClipToBounds="True">
+        <Border Background="{DynamicResource SurfaceAltBrush}"
+                BorderBrush="{DynamicResource BorderBrush2}" BorderThickness="0,0,1,0" />
+        <Grid MaxHeight="700" Margin="16,16,16,12" ClipToBounds="True">
             <Grid.RowDefinitions>
-                <RowDefinition Height="52*" />
+                <RowDefinition Height="55*" />
+                <RowDefinition Height="15*" />
                 <RowDefinition Height="12*" />
-                <RowDefinition Height="10*" />
                 <RowDefinition Height="15*" />
                 <RowDefinition Height="10*" />
             </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="100*" />
+            </Grid.ColumnDefinitions>
 
             <!-- Capa grande: música que está a tocar agora -->
-            <Border MinWidth="350"
-                    MinHeight="325"
+            <Border MinWidth="360"
+                    MinHeight="300"
+                    MaxHeight="370"
+                    MaxWidth="370"
                     Grid.Row="0"
+                    Grid.Column="0"
                     Background="{DynamicResource SurfaceBrush}"
                     ClipToBounds="True"
                     CornerRadius="8"
@@ -34,16 +41,13 @@
                     <Image Source="{Binding MusicaAtual.Image, Converter={StaticResource BytesParaImagemConverter}}"
                            Stretch="UniformToFill"
                            HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    <iconPacks:PackIconBoxIcons Kind="SolidMusic"
-                                                Width="48"
-                                                Height="48"
-                                                Foreground="{DynamicResource TextMutedBrush}"
-                                                HorizontalAlignment="Center"
-                                                VerticalAlignment="Center"
-                                                Visibility="{Binding MusicaAtual.Image, Converter={StaticResource NullToVisibilityConverter}}" />
+                    <Image Source="/Resources/Images/music-note.png"
+                           Stretch="UniformToFill"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Visibility="{Binding MusicaAtual.Image, Converter={StaticResource NullToVisibilityConverter}}"/>
                     <Button x:Name="OverlayMiniPlayer"
                             HorizontalAlignment="Right" Click="AbrirMiniPlayer_Click"
-                            VerticalAlignment="Top" Foreground="{DynamicResource TextPrimaryBrush}" Margin="10">
+                            VerticalAlignment="Top" Foreground="{DynamicResource TextOnAccentBrush}" Margin="10">
                         <Button.Style>
                             <Style TargetType="Button" BasedOn="{StaticResource IconButtonSmall}">
                                 <Setter Property="Opacity" Value="0" />
@@ -72,12 +76,12 @@
                 </Grid>
             </Border>
             <!-- Título / Artista da música atual -->
-            <Grid Grid.Row="1">
-                <StackPanel Margin="0,16,0,0">
+            <Grid Grid.Row="1"  Margin="0,8,0,4" >
+                <StackPanel VerticalAlignment="Center">
                     <Grid>
-                        <TextBlock Text="{Binding MusicaAtual.Titulo, FallbackValue='Nenhuma música'}"
+                        <TextBlock Text="{Binding MusicaAtual.Titulo, FallbackValue={StaticResource Str_NenhumaMusica}}"
                                    FontSize="18"
-                                   MaxWidth="260"
+                                   MaxWidth="240"
                                    HorizontalAlignment="Left"
                                    VerticalAlignment="Center"
                                    FontWeight="Bold"
@@ -90,25 +94,32 @@
                                     HorizontalAlignment="Right">
                             <Button Command="{Binding AlternarGostoCommand}"
                                     CommandParameter="{Binding MusicaAtual}"
-                                    Style="{StaticResource IconButtonSmall}"
                                     Width="32"
                                     Height="32"
                                     Margin="4,0">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource IconButtonSmall}">
+
+                                        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+                                        <Style.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Foreground" Value="{StaticResource TextError}"/>
+                                            </Trigger>
+                                            <DataTrigger Binding="{Binding GostoAtual}" Value="True">
+                                                <Setter Property="Foreground" Value="{DynamicResource TextError}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
                                 <iconPacks:PackIconBoxIcons Width="24"
                                                             Height="18">
                                     <iconPacks:PackIconBoxIcons.Style>
                                         <Style TargetType="iconPacks:PackIconBoxIcons">
-                                            <Setter Property="Kind"
-                                                    Value="RegularHeart" />
-                                            <Setter Property="Foreground"
-                                                    Value="{DynamicResource TextMutedBrush}" />
+                                            <Setter Property="Kind" Value="RegularHeart" />
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding GostoAtual}"
                                                              Value="True">
-                                                    <Setter Property="Kind"
-                                                            Value="SolidHeart" />
-                                                    <Setter Property="Foreground"
-                                                            Value="{DynamicResource TextError}" />
+                                                    <Setter Property="Kind" Value="SolidHeart" />
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
@@ -121,20 +132,20 @@
                         </StackPanel>
                     </Grid>
                     <TextBlock Text="{Binding MusicaAtual.Artista}"
-                               FontSize="13"
-                               MaxWidth="260"
+                               FontSize="14"
+                               MaxWidth="240"
                                HorizontalAlignment="Left"
                                FontFamily="{StaticResource FonteInter}"
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                TextTrimming="CharacterEllipsis"
-                               TextAlignment="Left"
-                               Margin="0,0,0,20" />
+                               TextAlignment="Left"/>
                 </StackPanel>
             </Grid>
             <!-- Barra de progresso + tempos -->
-            <StackPanel Grid.Row="2">
+            <StackPanel Grid.Row="2" Margin="0,0,0,0">
                 <Slider Style="{StaticResource PrettySlider}"
                         HorizontalAlignment="Stretch"
+                        VerticalAlignment="Center"
                         Minimum="0"
                         Maximum="{Binding DuracaoTotalMs}"
                         Value="{Binding PosicaoAtualMs}"
@@ -144,7 +155,7 @@
                         PreviewMouseUp="Slider_PreviewMouseUp"
                         Cursor="Hand" />
 
-                <Grid Margin="0,4,0,10">
+                <Grid VerticalAlignment="Center">
                     <TextBlock Text="{Binding TempoAtualFormatado, FallbackValue='00:00'}"
                                FontSize="12"
                                FontFamily="{StaticResource FonteJetBrains}"
@@ -159,13 +170,13 @@
             </StackPanel>
             <!-- Controlos -->
             <StackPanel Orientation="Horizontal"
-                        VerticalAlignment="Center"
                         HorizontalAlignment="Center"
-                        Grid.Row="3" Margin="0,0">
+                        VerticalAlignment="Center"
+                        Grid.Row="3" Margin="0,0,0,16">
                 <Button Command="{Binding AnteriorCommand}"
                         Style="{StaticResource PlayerControlButton}"
                         Margin="8,0">
-                    <Viewbox Width="auto" Height="auto" MaxHeight="38" MaxWidth="38">
+                    <Viewbox Width="auto" Height="auto" MaxHeight="42" MaxWidth="42">
                         <iconPacks:PackIconBoxIcons Kind="SolidSkipPrevious" />
                     </Viewbox>
                 </Button>
@@ -173,7 +184,7 @@
                 <Button Command="{Binding AlternarPlayPauseCommand}"
                         Style="{StaticResource PlayerPlayButton}"
                         Margin="0,0">
-                    <Viewbox Width="auto" Height="auto" MaxHeight="40" MaxWidth="40">
+                    <Viewbox Width="auto" Height="auto" MaxHeight="48" MaxWidth="48">
                         <iconPacks:PackIconBoxIcons>
                             <iconPacks:PackIconBoxIcons.Style>
                                 <Style TargetType="iconPacks:PackIconBoxIcons">
@@ -195,21 +206,20 @@
                 <Button Command="{Binding ProximaCommand}"
                         Style="{StaticResource PlayerControlButton}"
                         Margin="8,0">
-                    <Viewbox Width="auto" Height="auto" MaxHeight="38" MaxWidth="38">
+                    <Viewbox Width="auto" Height="auto" MaxHeight="42" MaxWidth="42">
                         <iconPacks:PackIconBoxIcons Kind="SolidSkipNext" />
                     </Viewbox>
                 </Button>
             </StackPanel>
 
             <!-- Equalizador / Repetição -->
-            <StackPanel Orientation="Horizontal"
-                        HorizontalAlignment="Center"
-                        Grid.Row="4"
-                        Margin="0,10">
+            <Grid Grid.Row="4" MaxWidth="320"
+                  Margin="0,8,0,0">
 
                 <!-- Botão Equalizador -->
                 <Button Command="{Binding AlternarEqualizadorCommand}"
                         Style="{StaticResource IconButtonSmall}"
+                        HorizontalAlignment="Left"
                         Margin="4,0">
                     <iconPacks:PackIconBoxIcons Kind="RegularSliderAlt"
                                                 Width="18" Foreground="{DynamicResource TextSecondaryBrush}"
@@ -220,7 +230,6 @@
                 <Button Command="{Binding AlternarLetrasCommand}"
                         MinWidth="180"
                         Height="30"
-                        Margin="10,0"
                         VerticalAlignment="Center"
                         Background="{DynamicResource SurfaceBrush}"
                         BorderThickness="0"
@@ -234,19 +243,30 @@
                                                     VerticalAlignment="Center"
                                                     Margin="0,0,8,0"
                                                     Visibility="{Binding TemLetra,Converter={StaticResource Boolean2VisibilityReConverter}}" />
-                        <TextBlock Text="{Binding LinhaAtual.Texto, FallbackValue={StaticResource Str_Sem_Letra}}"
-                                   FontFamily="{StaticResource FonteInter}"
+                        <TextBlock FontFamily="{StaticResource FonteInter}"
                                    Foreground="{DynamicResource TextSecondaryBrush}"
                                    FontSize="12"
                                    TextTrimming="CharacterEllipsis"
                                    MaxWidth="150"
-                                   VerticalAlignment="Center" />
+                                   VerticalAlignment="Center" >
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="{DynamicResource Str_Sem_Letra}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding TemLetra}" Value="true">
+                                            <Setter Property="Text" Value="{Binding LinhaAtual.Texto}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                     </StackPanel>
                 </Button>
 
                 <!-- Botão Loop (Todos / Uma) -->
                 <Button Command="{Binding AlternarRepeticaoCommand}"
                         Style="{StaticResource IconButtonSmall}"
+                        HorizontalAlignment="Right"
                         Margin="4,0">
                     <Grid>
                         <iconPacks:PackIconBoxIcons Width="18"
@@ -305,7 +325,7 @@
                         </TextBlock>
                     </Grid>
                 </Button>
-            </StackPanel>
+            </Grid>
         </Grid>
     </Grid>
 </UserControl>

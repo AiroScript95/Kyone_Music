@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Project_Kitsune.ViewModels.ShellPages.SearchPages;
+using System.Windows;
 
 namespace Project_Kitsune.ViewModels.ShellPages
 {
@@ -21,10 +22,16 @@ namespace Project_Kitsune.ViewModels.ShellPages
         private readonly BibliotecaService _biblioteca;
         public PlayerViewModel PlayerViewModel { get; }
         private const int maxResultado = 6;
-        public bool verTodosMusicas { get; set; } = false;
+        public bool verTodasMusicas { get; set; } = false;
         public bool verTodosArtistas { get; set; } = false;
         public bool verTodosAlbuns { get; set; } = false;
         public bool verTodosPlaylist { get; set; } = false;
+
+        private static string Texto(string chave, string termo) =>
+            string.Format((string)Application.Current.FindResource(chave), termo);
+
+        public string Titulo => Texto("Str_ResultadosPara", searchString);
+        public string TextoSemResultados => Texto("Str_SemResultadosPara", searchString);
 
         private ObservableCollection<Music> _resultadosMusica = new();
 
@@ -67,7 +74,7 @@ namespace Project_Kitsune.ViewModels.ShellPages
         private async Task Pesquisar()
         {
             string termo = searchString.Trim();
-            if (termo.Length == 0) {
+            if (termo.Length == 0 || _biblioteca.Musicas.Count == 0) {
                 ResultadosMusica = new();
                 ResultadosAlbuns = new();
                 ResultadosArtistas = new();
@@ -79,7 +86,8 @@ namespace Project_Kitsune.ViewModels.ShellPages
             var albuns = await grupos.ObterAlbunsAsync();
             var artistas = await grupos.ObterArtistasAsync();
 
-            var musicasEncontradas = _biblioteca.Musicas.ToList().Where(m =>
+            var musicasEncontradas = _biblioteca.Musicas.ToList()
+                .Where(m =>
                 ( m.Titulo?.Contains(termo, StringComparison.OrdinalIgnoreCase) ?? false ) ||
                 ( m.Artista?.Contains(termo, StringComparison.OrdinalIgnoreCase) ?? false ) ||
                 ( m.Album?.Contains(termo, StringComparison.OrdinalIgnoreCase) ?? false )).ToList();
@@ -88,11 +96,9 @@ namespace Project_Kitsune.ViewModels.ShellPages
 
             var artistasEncontrados = artistas.Where(g => g.Nome?.Contains(termo, StringComparison.OrdinalIgnoreCase) ?? false).ToList();
 
-            var playlistsEncontradas = new PlaylistsPageViewModel(_shell).Playlists.Where(p =>
-                p.Playlist.Id != Playlist.IdComLetra &&
-                ( p.Playlist.Name?.Contains(termo, StringComparison.OrdinalIgnoreCase) ?? false )).ToList();
+            var playlistsEncontradas = new PlaylistsPageViewModel(_shell).Playlists.Where(p => p.Playlist.Id != Playlist.IdComLetra && ( p.Playlist.Name?.Contains(termo, StringComparison.OrdinalIgnoreCase) ?? false )).ToList();
 
-            verTodosMusicas = musicasEncontradas.Count > maxResultado;
+            verTodasMusicas = musicasEncontradas.Count > maxResultado;
             verTodosAlbuns = albunsEncontrados.Count > maxResultado;
             verTodosArtistas = artistasEncontrados.Count > maxResultado;
             verTodosPlaylist = playlistsEncontradas.Count > maxResultado;
@@ -111,7 +117,7 @@ namespace Project_Kitsune.ViewModels.ShellPages
         [RelayCommand]
         private void AbrirAlbum(GrupoMusicas grupo)
         {
-            GrupoDetailPageViewModel detalhe = new(_shell, () => new SearchResultPageViewModel(_shell, searchString));
+            GrupoDetailPageViewModel detalhe = new(_shell, () => new SearchResultPageViewModel(_shell, searchString), false);
             detalhe.Carregar(grupo);
             _shell.CurrentPage = detalhe;
         }
@@ -119,7 +125,7 @@ namespace Project_Kitsune.ViewModels.ShellPages
         [RelayCommand]
         private void AbrirArtista(GrupoMusicas grupo)
         {
-            GrupoDetailPageViewModel detalhe = new(_shell, () => new SearchResultPageViewModel(_shell, searchString));
+            GrupoDetailPageViewModel detalhe = new(_shell, () => new SearchResultPageViewModel(_shell, searchString), true);
             detalhe.Carregar(grupo);
             _shell.CurrentPage = detalhe;
         }
@@ -140,9 +146,23 @@ namespace Project_Kitsune.ViewModels.ShellPages
             _shell.CurrentPage = detalhe;
         }
 
+        [RelayCommand]
+        private void VerMaisAlbuns()
+        {
+            SearchAlbumPageViewModel detalhe = new(_shell, () => new SearchResultPageViewModel(_shell, searchString), searchString);
+            _shell.CurrentPage = detalhe;
+        }
+
+        [RelayCommand]
+        private void VerMaisArtistas()
+        {
+            SearchArtistaPageViewModel detalhe = new(_shell, () => new SearchResultPageViewModel(_shell, searchString), searchString);
+            _shell.CurrentPage = detalhe;
+        }
+
         public event PropertyChangedEventHandler? PropertyChanged;
 
         protected void OnPropertyChanged([CallerMemberName] string propertyName = "")
-            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+=> PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }

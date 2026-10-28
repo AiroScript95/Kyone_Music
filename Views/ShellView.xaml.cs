@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Project_Kitsune.Models;
+using Project_Kitsune.Services;
 using Project_Kitsune.ViewModels;
 using Project_Kitsune.ViewModels.ShellPages;
 using System.Diagnostics;
@@ -19,12 +20,13 @@ namespace Project_Kitsune.Views
         private readonly PlayerViewModel player;
         private DispatcherTimer? _timerScroll;
         private readonly Dictionary<LinhaLetra, FrameworkElement> _mapaLinhas = new();
-        private DateTime _ultimoScrollManual = DateTime.MinValue;
+        private BibliotecaService biblioteca;
         private Point _pontoInicial;
 
         public ShellView()
         {
             player = App.ServiceProvider.GetRequiredService<PlayerViewModel>();
+            biblioteca = App.ServiceProvider.GetRequiredService<BibliotecaService>();
 
             InitializeComponent();
 
@@ -170,12 +172,11 @@ namespace Project_Kitsune.Views
                 //    await File.WriteAllTextAsync(fullPath, string.Empty, System.Text.Encoding.UTF8);
                 //}
 
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = "notepad.exe",
-                    Arguments = $"\"{fullPath}\"",
-                    UseShellExecute = true
-                });
+                string textoInicial = File.Exists(fullPath) ? File.ReadAllText(fullPath) : player.LetraAtual?.ConteudoBruto ?? "";
+
+                var vm = new EditarLetraViewModel(fullPath, textoInicial, biblioteca);
+                var janela = new EditarLetraWindow(vm) { Owner = Window.GetWindow(this) };
+                if (janela.ShowDialog() == true) _ = player.CarregarLetraAtual();
             }
             catch (UnauthorizedAccessException ex) {
                 Debug.WriteLine($"Permissão negada ao criar/abrir o ficheiro: {ex.Message}");

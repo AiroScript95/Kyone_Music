@@ -51,5 +51,10 @@
     <system:String x:Key="Str_RemoverDaPlaylist">プレイリストから削除</system:String>
     <system:String x:Key="Str_ComLetra">歌詞あり</system:String>
     <system:String x:Key="Str_FilaReproducao">再生キュー</system:String>
+    <system:String x:Key="Str_VerMais">もっと見る</system:String>
+    <system:String x:Key="Str_SemResultados">結果なし</system:String>
+    <system:String x:Key="Str_SemResultadosPara">「{0}」に一致する結果はありません</system:String>
+    <system:String x:Key="Str_ResultadosPara">「{0}」の検索結果</system:String>
+    <system:String x:Key="Str_NenhumaMusica">曲が見つかりません</system:String>
     <system:String x:Key="Str_">ee</system:String>
 </ResourceDictionary>

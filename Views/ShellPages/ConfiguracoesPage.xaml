@@ -23,17 +23,17 @@
 
         <TextBlock Grid.Row="0"
                    Text="{DynamicResource Str_Configuracoes}"
-                   FontSize="22" FontWeight="Bold"
+                   FontSize="24" FontWeight="Bold"
                    Foreground="{DynamicResource TextPrimaryBrush}"
                    FontFamily="{StaticResource FonteHiragino}"
                    VerticalAlignment="Center"
-                   Margin="24,0" />
+                   Margin="20,0" />
 
-        <ScrollViewer Grid.Row="1" Grid.Column="1" Margin="24,0,24,0"
-                      VerticalScrollBarVisibility="Hidden" Padding="10">
+        <ScrollViewer Grid.Row="1" Grid.Column="1" Margin="8,0,8,16" Template="{StaticResource MeuScrollViewer}"
+                      VerticalScrollBarVisibility="Auto" Padding="16,0,16,16" >
             <StackPanel HorizontalAlignment="Stretch">
                 <!-- ===== SECÇÃO: APARÊNCIA ===== -->
-                <Border Style="{StaticResource ConfigCard}">
+                <Border Style="{StaticResource ConfigCard}" Margin="0,4">
                     <StackPanel>
                         <TextBlock Text="{DynamicResource Str_Aparecncia}" Style="{StaticResource ConfigSectionTitle}" />
                         <!-- Tema -->
@@ -116,7 +116,7 @@
                 </Border>
 
                 <!-- ===== SECÇÃO: BIBLIOTECA ===== -->
-                <Border Style="{StaticResource ConfigCard}">
+                <Border Style="{StaticResource ConfigCard}" Margin="0,4">
                     <StackPanel>
                         <TextBlock Text="{DynamicResource Str_Biblioteca}" Style="{StaticResource ConfigSectionTitle}" />
 

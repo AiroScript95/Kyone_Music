@@ -13,12 +13,13 @@ namespace Project_Kitsune.ViewModels.ShellPages
         private readonly Func<object> _voltarPara;
         public PlayerViewModel PlayerViewModel { get; }
 
+        public bool IsCircular { get; set; }
+
         public ObservableCollection<Music> Musicas { get; } = new();
 
         private string _nome = "";
 
-        public string Nome
-        {
+        public string Nome {
             get => _nome;
             private set { _nome = value; OnPropertyChanged(); }
         }
@@ -27,28 +28,26 @@ namespace Project_Kitsune.ViewModels.ShellPages
 
         //private Func<AlbunsPageViewModel> value;
 
-        public byte[]? Capa
-        {
+        public byte[]? Capa {
             get => _capa;
             private set { _capa = value; OnPropertyChanged(); }
         }
 
         public int NumMusicas => Musicas.Count;
 
-        public string DuracaoTotalFormatada
-        {
-            get
-            {
+        public string DuracaoTotalFormatada {
+            get {
                 var ts = TimeSpan.FromSeconds(Musicas.Sum(m => m.Duracao.TotalSeconds));
                 return ts.Hours > 0 ? $"{ts.Hours}h {ts.Minutes}min" : $"{ts.Minutes} min";
             }
         }
 
-        public GrupoDetailPageViewModel(ShellViewModel shell, Func<object> voltarPara)
+        public GrupoDetailPageViewModel(ShellViewModel shell, Func<object> voltarPara, bool isCircular)
         {
             _shell = shell;
             PlayerViewModel = App.ServiceProvider.GetRequiredService<PlayerViewModel>();
             _voltarPara = voltarPara;
+            IsCircular = isCircular;
 
             Musicas.CollectionChanged += (s, e) =>
             {

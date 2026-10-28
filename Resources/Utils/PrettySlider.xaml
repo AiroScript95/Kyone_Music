@@ -10,7 +10,8 @@
             <Setter.Value>
                 <ControlTemplate TargetType="RepeatButton">
                     <Grid Background="Transparent">
-                        <Border Background="{DynamicResource TextDisabledBrush}" CornerRadius="0 3 3 0" Height="6.5" VerticalAlignment="Center" />
+
+                        <Border Height="7" VerticalAlignment="Center" />
                     </Grid>
                 </ControlTemplate>
             </Setter.Value>
@@ -24,7 +25,7 @@
             <Setter.Value>
                 <ControlTemplate TargetType="RepeatButton">
                     <Grid Background="Transparent">
-                        <Border CornerRadius="3,0,0,3" Height="6.5" Margin="0,0,-1,0" Background="{DynamicResource ProgressFillBrush}" VerticalAlignment="Center" />
+                        <Border CornerRadius="3" Height="7"  Background="{DynamicResource ProgressFillBrush}" VerticalAlignment="Center" />
                     </Grid>
                 </ControlTemplate>
             </Setter.Value>
@@ -45,7 +46,7 @@
                             Height="20"
                             Width="20"
                             HorizontalAlignment="Center" VerticalAlignment="Center"
-                            Background="Transparent"
+                            Background="Transparent" Margin="-4,0,0,0"
                             Style="{DynamicResource BorderCircular}">
                         <Ellipse
                             StrokeThickness="3"
@@ -59,7 +60,7 @@
 
     <ControlTemplate x:Key="Slider" TargetType="Slider">
         <Grid Height="26" Background="Transparent" x:Name="SliderRoot">
-            <Border Height="6.5" CornerRadius="3" VerticalAlignment="Center"
+            <Border Height="7" CornerRadius="3" VerticalAlignment="Center"
                     IsHitTestVisible="False"
                     Background="{DynamicResource TextDisabledBrush}" />
             <Track x:Name="PART_Track" VerticalAlignment="Center" Height="26">

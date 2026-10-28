@@ -71,8 +71,23 @@ namespace Project_Kitsune.Services
 
                 cmd.CommandText = comandoPlaylistMusicas;
                 cmd.ExecuteNonQuery();
+
+                MigrarDatabase(connection);
             }
             GarantirPlaylistFavoritos();
+        }
+
+        private void MigrarDatabase(SqliteConnection connection)
+        {
+            SqliteCommand cmd = connection.CreateCommand();
+
+            cmd.CommandText = "PRAGMA user_version;";
+            int versao = Convert.ToInt32(cmd.ExecuteScalar());
+
+            if (versao < 1) {
+                cmd.CommandText = "PRAGMA user_version = 1";
+                cmd.ExecuteNonQuery();
+            }
         }
 
         public List<string> ListarMusicasDaPlaylist(int playlistId)
@@ -172,16 +187,18 @@ namespace Project_Kitsune.Services
         {
             using (SqliteConnection connection = new(_database)) {
                 connection.Open();
-
+                using SqliteTransaction tx = connection.BeginTransaction();
                 SqliteCommand cmd = connection.CreateCommand();
                 cmd.CommandText = "DELETE FROM PlaylistMusicas WHERE PlaylistId = @id";
                 cmd.Parameters.AddWithValue("@id", playlistId);
+                cmd.Transaction = tx;
                 cmd.ExecuteNonQuery();
 
                 cmd.CommandText = "DELETE FROM Playlists WHERE Id = @id";
                 cmd.Parameters.Clear();
                 cmd.Parameters.AddWithValue("@id", playlistId);
                 cmd.ExecuteNonQuery();
+                tx.Commit();
             }
         }
 
@@ -202,6 +219,7 @@ namespace Project_Kitsune.Services
         {
             using (SqliteConnection connection = new(_database)) {
                 connection.Open();
+                using SqliteTransaction tx = connection.BeginTransaction();
                 SqliteCommand cmd = connection.CreateCommand();
 
                 cmd.CommandText = "DELETE FROM PlaylistMusicas WHERE MusicaId = @id";
@@ -212,6 +230,7 @@ namespace Project_Kitsune.Services
                 cmd.Parameters.Clear();
                 cmd.Parameters.AddWithValue("@id", musicaId);
                 cmd.ExecuteNonQuery();
+                tx.Commit();
             }
         }
 

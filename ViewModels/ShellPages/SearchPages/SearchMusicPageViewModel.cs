@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.DependencyInjection;
 using Project_Kitsune.Models;
 using Project_Kitsune.Services;
 using System;
@@ -9,6 +10,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace Project_Kitsune.ViewModels.ShellPages.SearchPages
 {
@@ -19,6 +21,10 @@ namespace Project_Kitsune.ViewModels.ShellPages.SearchPages
         private readonly BibliotecaService _biblioteca;
         public PlayerViewModel PlayerViewModel { get; }
         private Func<object> _voltarPara;
+
+        private static string Texto(string chave, string termo) => string.Format((string)Application.Current.FindResource(chave), termo);
+
+        public string Titulo => Texto("Str_ResultadosPara", searchString);
 
         private ObservableCollection<Music> _resultadosMusica = new();
 
@@ -58,9 +64,11 @@ namespace Project_Kitsune.ViewModels.ShellPages.SearchPages
             _shell.Player.TocarMusica(musica, ResultadosMusica.ToList());
         }
 
+        [RelayCommand]
+        private void Voltar() => _shell.CurrentPage = _voltarPara();
+
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        protected void OnPropertyChanged([CallerMemberName] string propertyName = "")
-=> PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        protected void OnPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }

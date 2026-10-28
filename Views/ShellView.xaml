@@ -42,10 +42,19 @@
             <pages:GrupoDetailPage />
         </DataTemplate>
         <DataTemplate DataType="{x:Type vm:SearchResultPageViewModel}">
-            <pages:SearchPage />
+            <pages:SearchResultPage />
         </DataTemplate>
         <DataTemplate DataType="{x:Type vms:SearchMusicPageViewModel}">
             <psch:SearchMusicPage />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vms:SearchAlbumPageViewModel}">
+            <psch:SearchAlbumPage />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vms:SearchArtistaPageViewModel}">
+            <psch:SearchArtistaPage />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vms:SearchPlaylistViewPageModel}">
+            <psch:SearchPlaylistPage />
         </DataTemplate>
 
         <DataTemplate x:Key="ListaMusicaTemplate">
@@ -204,11 +213,11 @@
             </Border>
         </DataTemplate>
     </UserControl.Resources>
-    <Grid Margin="0,2,0,0">
+    <Grid>
         <!--Conteudo UserControl-->
         <Grid ClipToBounds="True">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="60" />
+                <ColumnDefinition Width="58" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
@@ -219,8 +228,12 @@
             <Border Grid.Column="0" Grid.Row="1" BorderBrush="{DynamicResource BorderBrush2}">
                 <Grid Margin="0,10">
                     <StackPanel VerticalAlignment="Center"  HorizontalAlignment="Center">
+                        <StackPanel.Resources>
+                            <Style TargetType="Button" BasedOn="{StaticResource SidebarButton}">
+                                <Setter Property="Margin" Value="0,4,0,0" />
+                            </Style>
+                        </StackPanel.Resources>
                         <Button Command="{Binding IrParaMusicasCommand}"
-                                Style="{StaticResource SidebarButton}"
                                 ToolTip="{DynamicResource Str_Musicas}">
                             <iconPacks:PackIconBoxIcons Width="20" Height="20">
                                 <iconPacks:PackIconBoxIcons.Style>
@@ -237,7 +250,6 @@
                             </iconPacks:PackIconBoxIcons>
                         </Button>
                         <Button Command="{Binding IrParaPlaylistCommand}"
-                                Style="{StaticResource SidebarButton}"
                                 ToolTip="{DynamicResource Str_Playlists}">
                             <iconPacks:PackIconBoxIcons Width="20" Height="20">
                                 <iconPacks:PackIconBoxIcons.Style>
@@ -254,7 +266,6 @@
                             </iconPacks:PackIconBoxIcons>
                         </Button>
                         <Button Command="{Binding AbrirFavoritosCommand}"
-                                Style="{StaticResource SidebarButton}"
                                 ToolTip="{DynamicResource Str_Add_Play}">
                             <iconPacks:PackIconBoxIcons Width="20" Height="20">
                                 <iconPacks:PackIconBoxIcons.Style>
@@ -271,9 +282,8 @@
                             </iconPacks:PackIconBoxIcons>
                         </Button>
                         <Button Command="{Binding IrParaArtistasCommand}"
-                                Style="{StaticResource SidebarButton}"
                                 ToolTip="{DynamicResource Str_Artistas}"
-                                VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,0,0,0">
+                                VerticalAlignment="Top" HorizontalAlignment="Center">
                             <iconPacks:PackIconBoxIcons Width="20" Height="20">
                                 <iconPacks:PackIconBoxIcons.Style>
                                     <Style TargetType="iconPacks:PackIconBoxIcons">
@@ -289,9 +299,8 @@
                             </iconPacks:PackIconBoxIcons>
                         </Button>
                         <Button Command="{Binding IrParaAlbunsCommand}"
-                                Style="{StaticResource SidebarButton}"
                                 ToolTip="{DynamicResource Str_Albuns}"
-                                VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,0,0,0">
+                                VerticalAlignment="Top" HorizontalAlignment="Center">
                             <iconPacks:PackIconBoxIcons2 Width="20" Height="20">
                                 <iconPacks:PackIconBoxIcons2.Style>
                                     <Style TargetType="iconPacks:PackIconBoxIcons2">
@@ -307,11 +316,11 @@
                             </iconPacks:PackIconBoxIcons2>
                         </Button>
                     </StackPanel>
-                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Bottom">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,8">
                         <Button Command="{Binding IrParaConfiguracoesCommand}"
                                 Style="{StaticResource SidebarButton}"
                                 ToolTip="{DynamicResource Str_Configuracoes}"
-                                VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,0,0,0">
+                                VerticalAlignment="Top" HorizontalAlignment="Center">
                             <iconPacks:PackIconBoxIcons Width="20" Height="20">
                                 <iconPacks:PackIconBoxIcons.Style>
                                     <Style TargetType="iconPacks:PackIconBoxIcons">
@@ -344,7 +353,7 @@
                         <Image Source="{Binding CaminhoBackground, Converter={StaticResource StringParaImagemConverter}}"
                                Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Grid>
-                    <Grid Background="{DynamicResource SurfaceOverlayBrush}" Opacity="0.65" ClipToBounds="True">
+                    <Grid Background="{DynamicResource SurfaceOverlayBrush}" Opacity="0.7" ClipToBounds="True">
                         <Grid.Style>
                             <Style TargetType="Grid">
                                 <Style.Triggers>
@@ -463,6 +472,7 @@
                 </StackPanel>
             </Border>
         </Grid>
+
         <!-- LETRAS -->
         <Grid Background="{DynamicResource SurfaceBrush}" Focusable="True" Panel.ZIndex="10">
             <Grid.RenderTransform>
@@ -517,7 +527,6 @@
                     <Border Width="40" Height="5" Background="{DynamicResource TextMutedBrush}" Style="{StaticResource BorderCircular}" />
                 </Button>
             </Grid>
-
             <Grid Grid.Row="1">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -740,7 +749,7 @@
                 </Grid>
 
                 <!--  COLUNA 1: Letras  -->
-                <Grid Grid.Column="1" Margin="10,20,20,0">
+                <Grid Grid.Column="1" Margin="0,8,20,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
@@ -813,7 +822,7 @@
                             </Button>
                         </StackPanel>
 
-                        <ScrollViewer x:Name="ScrollLetras" VerticalScrollBarVisibility="Hidden" Margin="24,0,0,20"
+                        <ScrollViewer x:Name="ScrollLetras" VerticalScrollBarVisibility="Hidden" Margin="26,0,0,20"
                                       Visibility="{Binding Player.TemLetra, Converter={StaticResource BooleanToVisibilityConverter}}">
                             <ItemsControl x:Name="ItemsLetras" ItemsSource="{Binding Player.LetraAtual.Linhas}">
                                 <ItemsControl.ItemTemplate>
@@ -828,11 +837,49 @@
                                                     <Setter Property="FontWeight" Value="Medium" />
                                                     <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
                                                     <Setter Property="Opacity" Value="0.5" />
-                                                    <Setter Property="FontSize" Value="26" />
+                                                    <Setter Property="FontSize" Value="28" />
+                                                    <Setter Property="TextDecorations" Value="None" />
                                                     <Style.Triggers>
-                                                        <!-- Controlos ocultos: tudo maior -->
+
+                                                        <MultiDataTrigger>
+                                                            <MultiDataTrigger.Conditions>
+                                                                <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Self}}" Value="True" />
+                                                                <Condition Value="False">
+                                                                    <Condition.Binding>
+                                                                        <MultiBinding Converter="{StaticResource LinhaAtualConverter}">
+                                                                            <Binding />
+                                                                            <Binding Path="DataContext.Player.LinhaAtual" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                                                                        </MultiBinding>
+                                                                    </Condition.Binding>
+                                                                </Condition>
+                                                                <Condition Binding="{Binding DataContext.Player.LetraAtual.Sincronizada, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True" />
+                                                            </MultiDataTrigger.Conditions>
+                                                            <MultiDataTrigger.EnterActions>
+                                                                <BeginStoryboard>
+                                                                    <Storyboard>
+                                                                        <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0.85" Duration="0:0:0.25">
+                                                                            <DoubleAnimation.EasingFunction>
+                                                                                <QuadraticEase EasingMode="EaseOut" />
+                                                                            </DoubleAnimation.EasingFunction>
+                                                                        </DoubleAnimation>
+                                                                    </Storyboard>
+                                                                </BeginStoryboard>
+                                                            </MultiDataTrigger.EnterActions>
+                                                            <MultiDataTrigger.ExitActions>
+                                                                <BeginStoryboard>
+                                                                    <Storyboard>
+                                                                        <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0.5" Duration="0:0:0.5" FillBehavior="Stop">
+                                                                            <DoubleAnimation.EasingFunction>
+                                                                                <QuadraticEase EasingMode="EaseOut" />
+                                                                            </DoubleAnimation.EasingFunction>
+                                                                        </DoubleAnimation>
+                                                                    </Storyboard>
+                                                                </BeginStoryboard>
+                                                            </MultiDataTrigger.ExitActions>
+                                                        </MultiDataTrigger>
+
                                                         <DataTrigger Binding="{Binding DataContext.Player.OcultarControles, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
-                                                            <Setter Property="FontSize" Value="32" />
+                                                            <Setter Property="FontSize" Value="34" />
                                                         </DataTrigger>
 
                                                         <!-- Linha atual: Bold, branca e opaca; tamanho igual às outras -->
@@ -859,7 +906,7 @@
                                                             <DataTrigger.ExitActions>
                                                                 <BeginStoryboard>
                                                                     <Storyboard>
-                                                                        <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0.5" Duration="0:0:0.5">
+                                                                        <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0.5" Duration="0:0:0.5" FillBehavior="Stop">
                                                                             <DoubleAnimation.EasingFunction>
                                                                                 <QuadraticEase EasingMode="EaseOut" />
                                                                             </DoubleAnimation.EasingFunction>
@@ -897,6 +944,7 @@
                 </Grid>
             </Grid>
         </Grid>
+
         <!-- EQUALIZADOR -->
         <Grid Background="Transparent" Visibility="{Binding Player.MostrarEqualizador,Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="9">
             <Grid Background="{DynamicResource GradientBackground}" Opacity="0.2">

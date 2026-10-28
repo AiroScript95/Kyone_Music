@@ -4,25 +4,6 @@
              xmlns:converters="clr-namespace:Project_Kitsune.Converters">
     <Application.Resources>
         <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <!-- HandyControl Resources -->
-                <ResourceDictionary Source="pack://application:,,,/HandyControl;component/Themes/SkinDefault.xaml" />
-                <ResourceDictionary Source="pack://application:,,,/HandyControl;component/Themes/Theme.xaml" />
-
-                <!-- Tema Local -->
-                <ResourceDictionary Source="/Resources/Themes/Colors.Asa.xaml" />
-
-                <!--Styles-->
-                <ResourceDictionary Source="/Resources/Utils/HoverListbox.xaml" />
-                <ResourceDictionary Source="/Resources/Utils/PrettyScrollBar.xaml" />
-                <ResourceDictionary Source="/Resources/Utils/PrettySlider.xaml" />
-                <ResourceDictionary Source="/Resources/Utils/PrettySliderEqualizer.xaml" />
-                <ResourceDictionary Source="/Resources/Utils/Styles.xaml" />
-
-                <!-- Idioma -->
-                <ResourceDictionary Source="/Resources/Languages/Strings.en.xaml" />
-            </ResourceDictionary.MergedDictionaries>
-
             <!-- Fontes e Recursos Globais DEPOIS dos MergedDictionaries -->
             <FontFamily x:Key="FonteHiragino">pack://application:,,,/Resources/Fonts/#Hiragino Kaku Gothic Pro W6</FontFamily>
             <FontFamily x:Key="FonteInter">pack://application:,,,/Resources/Fonts/#Inter 18pt</FontFamily>
@@ -41,6 +22,26 @@
             <converters:StringToUriConverter x:Key="StringToUriConverter" />
             <converters:GanhoParaAlturaConverter x:Key="GanhoParaAlturaConverter" />
             <converters:BytesParaGradienteConverter x:Key="BytesParaGradienteConverter" />
+
+            <ResourceDictionary.MergedDictionaries>
+                <!-- HandyControl Resources -->
+                <ResourceDictionary Source="pack://application:,,,/HandyControl;component/Themes/SkinDefault.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/HandyControl;component/Themes/Theme.xaml" />
+
+                <!-- Tema Local -->
+                <ResourceDictionary Source="/Resources/Themes/Colors.Asa.xaml" />
+
+                <!--Styles-->
+                <ResourceDictionary Source="/Resources/Utils/HoverListbox.xaml" />
+                <ResourceDictionary Source="/Resources/Utils/PrettyScrollBar.xaml" />
+                <ResourceDictionary Source="/Resources/Utils/PrettySlider.xaml" />
+                <ResourceDictionary Source="/Resources/Utils/PrettySliderEqualizer.xaml" />
+                <ResourceDictionary Source="/Resources/Utils/Styles.xaml" />
+                <ResourceDictionary Source="/Resources/Utils/ContextMenus.xaml" />
+
+                <!-- Idioma -->
+                <ResourceDictionary Source="/Resources/Languages/Strings.en.xaml" />
+            </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

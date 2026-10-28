@@ -36,7 +36,7 @@
                     <iconPacks:PackIconBoxIcons Kind="SolidUndo" />
                 </Button>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="10">
-                    <RadioButton x:Name="RadioList" Style="{StaticResource IconFormat}" Checked="FormatoSelect_Checked">
+                    <RadioButton x:Name="RadioList" Style="{StaticResource IconFormat}" Checked="FormatoSelect_Checked" Margin="8,0">
                         <StackPanel Orientation="Horizontal">
                             <iconPacks:PackIconBoxIcons Kind="RegularList" />
                             <TextBlock Text="{DynamicResource Str_Lista}" FontFamily="{StaticResource FonteInter}" Margin="10,0" FontSize="12" />

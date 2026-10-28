@@ -185,6 +185,7 @@ namespace Project_Kitsune.Views
                 configuracao.UltimaMusica.PosicaoMs = audioPlayerService.ObterPosicaoAtual();
                 configuracao.UltimaMusica.DuracaoMS = audioPlayerService.ObterDuracaoTotal();
                 configuracao.UltimaMusica.EstavaTocando = player.EstaTocando;
+                configuracao.UltimaMusica.Gosto = player.GostoAtual;
             }
 
             configuracaoService.GuardarConfiguracao(configuracao);

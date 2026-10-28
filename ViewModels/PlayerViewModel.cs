@@ -16,8 +16,7 @@ namespace Project_Kitsune.ViewModels
 {
     public record GostoAlteradoMessage(Music Musica);
 
-    public class BibliotecaAlteradaMessage
-    { }
+    public class BibliotecaAlteradaMessage;
 
     public partial class PlayerViewModel : INotifyPropertyChanged, IDisposable
     {
@@ -477,6 +476,7 @@ namespace Project_Kitsune.ViewModels
                             TempoAtualFormatado = FormatarTempo(_posicaoRestaurar);
                             TempoTotalFormatado = FormatarTempo(_duracaoRestaurar);
                             DuracaoTotalMs = _duracaoRestaurar;
+                            GostoAtual = last.Gosto;
 
                             if (_duracaoRestaurar > 0) {
                                 ProgressoPercentual = (double)_posicaoRestaurar / _duracaoRestaurar * 100;
@@ -748,7 +748,7 @@ namespace Project_Kitsune.ViewModels
                 && string.Equals(m.Caminho, MusicaAtual.Caminho, StringComparison.OrdinalIgnoreCase));
         }
 
-        private async Task CarregarLetraAtual()
+        public async Task CarregarLetraAtual()
         {
             if (MusicaAtual == null) return;
 
@@ -761,7 +761,7 @@ namespace Project_Kitsune.ViewModels
             CancellationToken token = cts.Token;
 
             try {
-                var letra = await BibliotecaService.ObterLetra(MusicaAtual).ConfigureAwait(false);
+                var letra = await BibliotecaService.ObterLetra(MusicaAtual, token).ConfigureAwait(false);
 
                 if (token.IsCancellationRequested) return;
 

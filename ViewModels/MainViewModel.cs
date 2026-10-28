@@ -155,7 +155,7 @@ namespace Project_Kitsune.ViewModels
         private async Task Pesquisar()
         {
             string termo = TextoPesquisa.Trim();
-            if (termo.Length == 0) {
+            if (termo.Length == 0 || _biblioteca.Musicas.Count == 0) {
                 ResultadosMusica = new();
                 ResultadosAlbuns = new();
                 ResultadosArtistas = new();
@@ -204,7 +204,7 @@ namespace Project_Kitsune.ViewModels
         [RelayCommand]
         private void AbrirAlbum(GrupoMusicas grupo)
         {
-            GrupoDetailPageViewModel detalhe = new(_shell, () => new AlbunsPageViewModel(_shell));
+            GrupoDetailPageViewModel detalhe = new(_shell, () => new AlbunsPageViewModel(_shell), false);
             detalhe.Carregar(grupo);
             _shell.CurrentPage = detalhe;
             TextoPesquisa = string.Empty;
@@ -213,7 +213,7 @@ namespace Project_Kitsune.ViewModels
         [RelayCommand]
         private void AbrirArtista(GrupoMusicas grupo)
         {
-            GrupoDetailPageViewModel detalhe = new(_shell, () => new ArtistasPageViewModel(_shell));
+            GrupoDetailPageViewModel detalhe = new(_shell, () => new ArtistasPageViewModel(_shell), true);
             detalhe.Carregar(grupo);
             _shell.CurrentPage = detalhe;
             TextoPesquisa = string.Empty;
@@ -233,6 +233,7 @@ namespace Project_Kitsune.ViewModels
         {
             string termo = TextoPesquisa;
             _shell.CurrentPage = new SearchResultPageViewModel(_shell, termo);
+            Player.MostrarLetra = false;
             TextoPesquisa = string.Empty;
         }
 

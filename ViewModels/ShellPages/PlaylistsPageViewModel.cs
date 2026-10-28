@@ -18,7 +18,7 @@ namespace Project_Kitsune.ViewModels.ShellPages
         public ObservableCollection<Music> Musicas { get; set; } = new();
         protected DatabaseService _database;
         protected ShellViewModel _shell;
-
+        private Dictionary<string, Music> _porCaminho;
         private bool _mostrarModalCriarPlaylist;
 
         public bool MostrarModalCriarPlaylist {
@@ -58,33 +58,29 @@ namespace Project_Kitsune.ViewModels.ShellPages
 
             List<Playlist> existentes = _database.ListarPlaylists();
 
+            _porCaminho = _biblioteca.Musicas.ToDictionary(m => m.Caminho, StringComparer.OrdinalIgnoreCase);
+
             Playlists.Add(PlaylistLetras());
             foreach (Playlist p in existentes) {
-                Playlists.Add(CarregarComCapa(p));
+                Playlists.Add(CarregarComCapa(p, _porCaminho));
             }
         }
 
-        public PlaylistComCapa CarregarComCapa(Playlist playlist)
+        public PlaylistComCapa CarregarComCapa(Playlist playlist, Dictionary<string, Music> porCaminho)
         {
             List<string> todosCaminhos = playlist.Name == "Favoritos"
                 ? _database.ListarMusicasFavoritas()
                 : _database.ListarMusicasDaPlaylist(playlist.Id);
 
-            string? caminho = todosCaminhos.FirstOrDefault();
-            byte[]? capa = null;
+            List<Music> existentes = todosCaminhos.Select(c => porCaminho.TryGetValue(c, out Music? m) ? m : null).OfType<Music>().ToList();
+
+            byte[]? capa = existentes.FirstOrDefault()?.Image;
             bool menuOpen = true;
 
-            if (caminho != null) {
-                Music? musica = _biblioteca.LerMusicaPorCaminho(caminho);
-                if (musica != null) {
-                    capa = musica.Image;
-                }
-            }
-            List<string> listaMusicas = todosCaminhos.Take(3).Select(caminho => _biblioteca.LerMusicaPorCaminho(caminho)?.Titulo ??
-            Path.GetFileNameWithoutExtension(caminho)).ToList();
+            List<string> listaMusicas = existentes.Take(3).Select(m => m.Titulo).ToList();
 
             if (playlist.Name == "Favoritos") {
-                playlist.NumMusicas = todosCaminhos.Count;
+                playlist.NumMusicas = existentes.Count;
                 menuOpen = false;
             }
 
@@ -93,8 +89,7 @@ namespace Project_Kitsune.ViewModels.ShellPages
 
         private PlaylistComCapa PlaylistLetras()
         {
-            var musicasComLetra = _ordenacaoService.Ordenar(_biblioteca.Musicas.Where(m => File.Exists(Path.ChangeExtension(m.Caminho, ".lrc"))
-                || File.Exists(Path.ChangeExtension(m.Caminho, ".kc.lrc"))).ToList(), "Alfabetica", false);
+            var musicasComLetra = _ordenacaoService.Ordenar(_biblioteca.Musicas.Where(m => BibliotecaService.TemLrcComConteudo(m.Caminho)).ToList(), "Alfabetica", false);
 
             var comLetra = new Playlist
             {
@@ -127,10 +122,10 @@ namespace Project_Kitsune.ViewModels.ShellPages
 
             List<Playlist> atualizadas = _database.ListarPlaylists();
             Playlists.Clear();
-
+            _porCaminho = _biblioteca.Musicas.ToDictionary(m => m.Caminho, StringComparer.OrdinalIgnoreCase);
             Playlists.Add(PlaylistLetras());
             foreach (Playlist p in atualizadas) {
-                Playlists.Add(CarregarComCapa(p));
+                Playlists.Add(CarregarComCapa(p, _porCaminho));
             }
 
             NovaPlaylist = string.Empty;

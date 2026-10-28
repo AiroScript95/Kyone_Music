@@ -22,9 +22,9 @@ namespace Project_Kitsune.Views.ShellPages
     /// <summary>
     /// Interação lógica para SearchPage.xam
     /// </summary>
-    public partial class SearchPage : UserControl
+    public partial class SearchResultPage : UserControl
     {
-        public SearchPage()
+        public SearchResultPage()
         {
             InitializeComponent();
         }

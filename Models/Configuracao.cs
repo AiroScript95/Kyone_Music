@@ -5,6 +5,7 @@
         public string? Caminho { get; set; }
         public long PosicaoMs { get; set; } = 0;
         public long DuracaoMS { get; set; } = 0;
+        public bool Gosto { get; set; } = false;
         public bool EstavaTocando { get; set; } = false;
         public DateTime SalvoEm { get; set; } = DateTime.UtcNow;
     }

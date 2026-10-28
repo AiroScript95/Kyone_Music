@@ -8,35 +8,45 @@
         xmlns:local="clr-namespace:Project_Kitsune.Views"
         xmlns:converters="clr-namespace:Project_Kitsune.Converters"
         xmlns:viewmodels="clr-namespace:Project_Kitsune.ViewModels"
+        xmlns:system="clr-namespace:System;assembly=System.Runtime"
         d:DataContext="{d:DesignInstance Type=viewmodels:PlayerViewModel}"
         mc:Ignorable="d"
         WindowState="Normal"
-        WindowStyle="SingleBorderWindow"
+        WindowStyle="None"
         WindowStartupLocation="Manual"
         ResizeMode="NoResize"
         Background="Transparent"
-        Title="{Binding MusicaAtual.Titulo, StringFormat='Kitsune - {0}', FallbackValue='Kitsune - Mini Player'}"
-        Height="460" Width="300">
-    <Grid Background="{DynamicResource SurfaceBrush}">
-
-        <Grid Margin="12">
-            <Grid.RowDefinitions>
+        Title="{Binding MusicaAtual.Titulo, FallbackValue='Kitsune - Mini Player'}"
+        Height="180" Width="420">
+    <Grid Background="{DynamicResource SurfaceBrush}" x:Name="Raiz">
+        <Grid Background="Transparent" Panel.ZIndex="1" Height="40" VerticalAlignment="Top"
+              MouseLeftButtonDown="Topo_MouseLeftButtonDown">
+            <Button Style="{StaticResource IconButton}" HorizontalAlignment="Right"
+                    Margin="0,5,5,0" Height="34" Width="34" Click="Button_Click">
+                <iconPacks:PackIconBoxIcons Kind="SolidX" Width="14" />
+            </Button>
+        </Grid>
+        <Grid>
+            <Grid.ColumnDefinitions>
                 <!-- Capa expandida no topo -->
-                <RowDefinition Height="*" />
+                <ColumnDefinition Width="Auto" />
                 <!-- Detalhes e Controles na parte inferior -->
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
+                <ColumnDefinition Width="100*" />
+            </Grid.ColumnDefinitions>
 
             <!-- 1. CAPA (Preenche a largura proporcionalmente) -->
-            <Border Grid.Row="0"
+            <Border Grid.Column="0" Width="140" Height="140" Margin="12,0,0,0"
                     Background="{DynamicResource SurfaceAltBrush}"
                     ClipToBounds="True"
-                    CornerRadius="12"
-                    Style="{StaticResource BorderClip}">
+                    Style="{StaticResource BorderCircularClip}"
+                    RenderTransformOrigin="0.5,0.5">
+                <Border.RenderTransform>
+                    <RotateTransform x:Name="Rotacao" Angle="0" />
+                </Border.RenderTransform>
                 <Grid ClipToBounds="True">
                     <Image HorizontalAlignment="Center"
                            VerticalAlignment="Center"
-                           Source="{Binding MusicaAtual.Image, Converter={StaticResource BytesParaImagemConverter}}"
+                           Source="{Binding MusicaAtual.Image, Converter={StaticResource BytesParaImagemConverter},ConverterParameter=240}"
                            Stretch="UniformToFill" />
                     <iconPacks:PackIconBoxIcons Width="48"
                                                 Height="48"
@@ -47,20 +57,194 @@
                                                 Visibility="{Binding MusicaAtual.Image, Converter={StaticResource NullToVisibilityConverter}}" />
                 </Grid>
             </Border>
+            <StackPanel Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Visibility="{Binding TemLetra, Converter={StaticResource Boolean2VisibilityReConverter}}">
 
-            <!-- 2. INFORMAÇÕES E CONTROLES -->
-            <StackPanel Grid.Row="1" Margin="0,10,0,0">
+                <StackPanel>
+                    <iconPacks:PackIconBoxIcons Kind="RegularSearchBig" Width="40" Height="80"
+                                                HorizontalAlignment="Center" Foreground="{DynamicResource TextDisabledBrush}" />
+                    <TextBlock Text="{DynamicResource Str_Sem_Letra}" FontFamily="{StaticResource FonteInter}"  HorizontalAlignment="Center" FontSize="14" Foreground="{DynamicResource TextDisabledBrush}" />
+                </StackPanel>
+            </StackPanel>
+            <ScrollViewer x:Name="ScrollLetras" Grid.Column="1"
+                          VerticalScrollBarVisibility="Hidden" VerticalAlignment="Center" Height="140" Margin="16,8"
+                          Visibility="{Binding TemLetra, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <ItemsControl x:Name="ItemsLetras" ItemsSource="{Binding LetraAtual.Linhas}" Margin="0,36,0,0">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Texto}"
+                                       FontFamily="{StaticResource FonteInter}"
+                                       TextWrapping="Wrap" Margin="0,6" Cursor="Hand"
+                                       MouseLeftButtonUp="LinhaLetra_Click" TextAlignment="Left">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Left" />
+                                        <Setter Property="FontWeight" Value="Medium" />
+                                        <Setter Property="FontSize" Value="16" />
+                                        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+                                        <Setter Property="Opacity" Value="0.5" />
+                                        <Style.Triggers>
+                                            <!-- Hover: só nas linhas que não são a atual, em letra sincronizada -->
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Self}}" Value="True" />
+                                                    <Condition Value="False">
+                                                        <Condition.Binding>
+                                                            <MultiBinding Converter="{StaticResource LinhaAtualConverter}">
+                                                                <Binding />
+                                                                <Binding Path="DataContext.LinhaAtual" RelativeSource="{RelativeSource AncestorType=Window}" />
+                                                            </MultiBinding>
+                                                        </Condition.Binding>
+                                                    </Condition>
+                                                    <Condition Binding="{Binding DataContext.LetraAtual.Sincronizada, RelativeSource={RelativeSource AncestorType=Window}}" Value="True" />
+                                                </MultiDataTrigger.Conditions>
+                                                <MultiDataTrigger.EnterActions>
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0.85" Duration="0:0:0.25" />
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </MultiDataTrigger.EnterActions>
+                                                <MultiDataTrigger.ExitActions>
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0.5" Duration="0:0:0.5" FillBehavior="Stop" />
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </MultiDataTrigger.ExitActions>
+                                            </MultiDataTrigger>
+
+                                            <!-- Linha atual -->
+                                            <DataTrigger Value="True">
+                                                <DataTrigger.Binding>
+                                                    <MultiBinding Converter="{StaticResource LinhaAtualConverter}">
+                                                        <Binding />
+                                                        <Binding Path="DataContext.LinhaAtual" RelativeSource="{RelativeSource AncestorType=Window}" />
+                                                    </MultiBinding>
+                                                </DataTrigger.Binding>
+                                                <Setter Property="FontWeight" Value="Bold" />
+                                                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+                                                <DataTrigger.EnterActions>
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.25" />
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </DataTrigger.EnterActions>
+                                                <DataTrigger.ExitActions>
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0.5" Duration="0:0:0.5" FillBehavior="Stop" />
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </DataTrigger.ExitActions>
+                                            </DataTrigger>
+
+                                            <!-- Não sincronizada -->
+                                            <DataTrigger Binding="{Binding DataContext.LetraAtual.Sincronizada, RelativeSource={RelativeSource AncestorType=Window}}" Value="False">
+                                                <Setter Property="FontWeight" Value="Normal" />
+                                                <Setter Property="FontSize" Value="14" />
+                                                <Setter Property="Opacity" Value="1" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Grid>
+
+        <Grid>
+            <Border Background="{DynamicResource SurfaceOverlayBrush}" IsHitTestVisible="False">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Opacity" Value="0" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsMouseOver, ElementName=Raiz}" Value="True">
+                                <DataTrigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard BeginTime="0:0:1.5">
+                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.25" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.EnterActions>
+                                <DataTrigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.2" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.ExitActions>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+            </Border>
+
+            <!-- Painel que sobe de baixo -->
+            <StackPanel Margin="16,0,16,8" VerticalAlignment="Bottom">
+                <StackPanel.RenderTransform>
+                    <TranslateTransform Y="30" />
+                </StackPanel.RenderTransform>
+                <StackPanel.Style>
+                    <Style TargetType="StackPanel">
+                        <Setter Property="Opacity" Value="0" />
+                        <Setter Property="IsHitTestVisible" Value="False" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsMouseOver, ElementName=Raiz}" Value="True">
+                                <DataTrigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard BeginTime="0:0:1.5">
+                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.25" />
+                                            <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)"
+                                                             To="0" Duration="0:0:0.2">
+                                                <DoubleAnimation.EasingFunction>
+                                                    <CubicEase EasingMode="EaseOut" />
+                                                </DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="IsHitTestVisible">
+                                                <DiscreteObjectKeyFrame KeyTime="0:0:0">
+                                                    <DiscreteObjectKeyFrame.Value>
+                                                        <system:Boolean>True</system:Boolean>
+                                                    </DiscreteObjectKeyFrame.Value>
+                                                </DiscreteObjectKeyFrame>
+                                            </ObjectAnimationUsingKeyFrames>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.EnterActions>
+                                <DataTrigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.2" />
+                                            <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)"
+                                                             To="30" Duration="0:0:0.2" />
+                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="IsHitTestVisible">
+                                                <DiscreteObjectKeyFrame KeyTime="0:0:0">
+                                                    <DiscreteObjectKeyFrame.Value>
+                                                        <system:Boolean>False</system:Boolean>
+                                                    </DiscreteObjectKeyFrame.Value>
+                                                </DiscreteObjectKeyFrame>
+                                            </ObjectAnimationUsingKeyFrames>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.ExitActions>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
                 <!-- Título e Artista -->
-                <StackPanel Margin="4,0,4,8">
+                <StackPanel Margin="0,0,0,04">
                     <TextBlock FontFamily="{StaticResource FonteInter}"
-                               FontSize="15"
+                               FontSize="18"
                                FontWeight="Bold"
                                Foreground="{DynamicResource TextPrimaryBrush}"
                                Text="{Binding MusicaAtual.Titulo, FallbackValue='Nenhuma música'}"
                                TextTrimming="CharacterEllipsis" />
                     <TextBlock Margin="0,2,0,0"
                                FontFamily="{StaticResource FonteInter}"
-                               FontSize="12"
+                               FontSize="14"
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                Text="{Binding MusicaAtual.Artista}"
                                TextTrimming="CharacterEllipsis" />
@@ -79,7 +263,7 @@
                         Value="{Binding PosicaoAtualMs}" />
 
                 <!-- Tempos decorrido e total -->
-                <Grid Margin="2,2,2,4">
+                <Grid Margin="2,2,2,0">
                     <TextBlock HorizontalAlignment="Left"
                                FontFamily="{StaticResource FonteJetBrains}"
                                FontSize="10"
@@ -93,10 +277,9 @@
                 </Grid>
 
                 <!-- Botões de Reprodução -->
-                <StackPanel HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
+                <StackPanel VerticalAlignment="Center" Margin="0,0,0,0" HorizontalAlignment="Center"
                             Orientation="Horizontal">
-                    <Button Margin="8,0"
+                    <Button Margin="0,0"
                             Command="{Binding AnteriorCommand}"
                             Style="{StaticResource PlayerControlButton}">
                         <iconPacks:PackIconBoxIcons Width="24"
@@ -121,7 +304,7 @@
                         </iconPacks:PackIconBoxIcons>
                     </Button>
 
-                    <Button Margin="8,0"
+                    <Button Margin="0,0"
                             Command="{Binding ProximaCommand}"
                             Style="{StaticResource PlayerControlButton}">
                         <iconPacks:PackIconBoxIcons Width="24"

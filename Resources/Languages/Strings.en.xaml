@@ -51,6 +51,10 @@
     <system:String x:Key="Str_RemoverDaPlaylist">Remove from playlist</system:String>
     <system:String x:Key="Str_ComLetra">With lyrics</system:String>
     <system:String x:Key="Str_FilaReproducao">Queue</system:String>
-
+    <system:String x:Key="Str_VerMais">See more</system:String>
+    <system:String x:Key="Str_SemResultados">No results</system:String>
+    <system:String x:Key="Str_SemResultadosPara">No results for "{0}"</system:String>
+    <system:String x:Key="Str_ResultadosPara">Results for "{0}"</system:String>
+    <system:String x:Key="Str_NenhumaMusica">No songs found</system:String>
     <system:String x:Key="Str_">ee</system:String>
 </ResourceDictionary>
