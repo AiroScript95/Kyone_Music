@@ -1,4 +1,4 @@
-﻿namespace Project_Kitsune.ViewModels
+﻿namespace KyoneMusic.ViewModels
 {
     internal class MiniPlayerViewModel
     {

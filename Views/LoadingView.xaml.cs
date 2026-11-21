@@ -1,6 +1,6 @@
 ﻿using System.Windows.Controls;
 
-namespace Project_Kitsune.Views
+namespace KyoneMusic.Views
 {
     public partial class LoadingScreem : UserControl
     {

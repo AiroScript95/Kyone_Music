@@ -1,15 +1,16 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
-using Project_Kitsune.Services;
-using Project_Kitsune.ViewModels;
+using KyoneMusic.Services;
+using KyoneMusic.Helpers;
+using KyoneMusic.ViewModels;
 
-namespace Project_Kitsune.Models
+namespace KyoneMusic.Models
 {
     public class GrupoMusicas
     {
         public string Nome { get; set; } = "";
         public byte[]? Capa { get; set; }
-        public List<string> ListaMusicas { get; set; } = new();   // 3 títulos para o cartão
+        public List<string> ListaMusicas { get; set; } = new();
         public List<Music> Musicas { get; set; } = new();
-        public int NumMusicas => Musicas.Count;
+        public string NumMusicas => TextoHelper.Texto("Str_NumMusicas", Musicas.Count.ToString());
     }
 }

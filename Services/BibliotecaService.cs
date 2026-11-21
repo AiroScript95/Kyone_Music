@@ -1,7 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
-using Project_Kitsune.Models;
-using Project_Kitsune.ViewModels;
+using KyoneMusic.Models;
+using KyoneMusic.Helpers;
+using KyoneMusic.ViewModels;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -14,15 +15,19 @@ using System.Text.RegularExpressions;
 using System.Windows;
 using FileIO = Microsoft.VisualBasic.FileIO;
 
-namespace Project_Kitsune.Services
+namespace KyoneMusic.Services
 {
-    public class BibliotecaService
+    public class BibliotecaService : IDisposable
     {
-        public DatabaseService databaseService { get; set; } = App.ServiceProvider.GetRequiredService<DatabaseService>();
+        private readonly DatabaseService databaseService = App.ServiceProvider.GetRequiredService<DatabaseService>();
+        private OrigemLetraStore _origemLetra = new();
 
         public event Action? BibliotecaCarregada;
 
         public event Action<List<string>>? PastasEmFalta;
+
+        private readonly SemaphoreSlim _carregamentoSemaphore = new(1, 1);
+        private bool _inicializado;
 
         public ObservableCollection<Music> Musicas { get; } = new();
 
@@ -51,15 +56,16 @@ namespace Project_Kitsune.Services
         private static readonly Regex RegexTimestamp = new(@"\[(\d{1,2}):(\d{2})(?:[.:](\d{1,3}))?\]", RegexOptions.Compiled);
         private readonly OrdenacaoService _ordenacaoService = App.ServiceProvider.GetRequiredService<OrdenacaoService>();
         private readonly List<FileSystemWatcher> _watchers = new();
-        private bool _inicializado = false;
         private const string UserAgentKitsune = "Kitsune/0.1";
         private const string UserAgentBrowser = "Mozilla/5.0";
-        private const double ToleranciaSegundos = 3;
-        private const double ToleranciaSoDuracao = 1.5;
+        private const double ToleranciaSegundos = 4;
+        private const double ToleranciaSoDuracao = 2;
+
+        private readonly ConcurrentDictionary<string, CancellationTokenSource> _alteracoesPendentes = new(StringComparer.OrdinalIgnoreCase);
 
         // ───────────────────────────── Pastas ─────────────────────────────
 
-        public void LerMusicasDaPasta(string caminhoPasta, Action<List<Music>> aoCompletarLote)
+        private void LerMusicasDaPasta(string caminhoPasta, Action<List<Music>> aoCompletarLote, IReadOnlyDictionary<string, (Music Musica, long DataModificacao)> cacheCompleto)
         {
             if (!Directory.Exists(caminhoPasta)) return;
 
@@ -77,7 +83,6 @@ namespace Project_Kitsune.Services
                 return;
             }
 
-            var cacheCompleto = databaseService.ObterTodoCache();
             var loteUi = new ConcurrentQueue<Music>();
             var paraSalvar = new ConcurrentBag<(Music Musica, long DataMod)>();
             int processados = 0;
@@ -100,19 +105,17 @@ namespace Project_Kitsune.Services
 
                     if (musicaCache != null && dataModificacaoCache == dataModificacaoAtual) {
                         musicaCache.DataAdicionado = fileInfo.CreationTimeUtc;
-
                         musicaCache.TemLetraDisponivel = TemLrcComConteudo(item);
-
                         music = musicaCache;
                     }
                     else {
                         using (TagLib.File tagFile = TagLib.File.Create(item)) {
                             byte[] imagem = Array.Empty<byte>();
                             if (tagFile.Tag.Pictures.Length > 0) imagem = tagFile.Tag.Pictures[0].Data.Data;
-
+                            string title = tagFile.Tag.Title ?? Path.GetFileNameWithoutExtension(item);
                             music = new Music
                             {
-                                Titulo = tagFile.Tag.Title ?? Path.GetFileNameWithoutExtension(item),
+                                Titulo = TextoHelper.NormalizarTexto(title),
                                 Artista = tagFile.Tag.FirstPerformer ?? "Unknown",
                                 Album = tagFile.Tag.Album ?? "Unknown",
                                 Genero = tagFile.Tag.FirstGenre ?? "Unknown",
@@ -120,7 +123,7 @@ namespace Project_Kitsune.Services
                                 Duracao = tagFile.Properties.Duration,
                                 DuracaoArredondada = TimeSpan.FromSeconds((int)tagFile.Properties.Duration.TotalSeconds),
                                 DataAdicionado = fileInfo.CreationTimeUtc,
-                                VezesTocada = databaseService.ObterVezesTocada(item),
+                                VezesTocada = musicaCache?.VezesTocada ?? 0,
                                 Gosto = musicaCache?.Gosto ?? false,
                                 Image = imagem,
                                 TemLetraDisponivel = TemLrcComConteudo(item)
@@ -164,10 +167,10 @@ namespace Project_Kitsune.Services
                     if (tagFile.Tag.Pictures.Length > 0) {
                         imagem = tagFile.Tag.Pictures[0].Data.Data;
                     }
-
+                    string title = tagFile.Tag.Title ?? Path.GetFileNameWithoutExtension(caminho);
                     return new Music
                     {
-                        Titulo = tagFile.Tag.Title ?? Path.GetFileNameWithoutExtension(caminho),
+                        Titulo = TextoHelper.NormalizarTexto(title),
                         Artista = tagFile.Tag.FirstPerformer ?? "Unknown",
                         Album = tagFile.Tag.Album ?? "Unknown",
                         Genero = tagFile.Tag.FirstGenre ?? "Unknown",
@@ -208,7 +211,11 @@ namespace Project_Kitsune.Services
                     if (!string.IsNullOrEmpty(conteudo)) {
                         musica.TemLetraDisponivel = true;
 
-                        return ParsearLetra(conteudo, FonteLetra.ArquivoLrc, caminhoLrcKitsune);
+                        var letra = ParsearLetra(conteudo, FonteLetra.ArquivoLrc, caminhoLrcKitsune);
+                        var (fonte, editada) = _origemLetra.Obter(caminhoLrcKitsune);
+                        letra.Fonte = fonte;
+                        letra.Editada = editada;
+                        return letra;
                     }
                 }
                 catch (OperationCanceledException) { throw; }
@@ -225,6 +232,7 @@ namespace Project_Kitsune.Services
                     await File.WriteAllTextAsync(caminhoLrcKitsune, letraLrclib);
                     musica.TemLetraDisponivel = true;
                     Debug.WriteLine($"[Letra] {musica.Titulo} - {musica.Artista}: LRCLIB");
+                    _origemLetra.Registar(caminhoLrcKitsune, FonteLetra.Lrclib);   // e FonteLetra.Kugou no outro
                     return ParsearLetra(letraLrclib, FonteLetra.Lrclib, caminhoLrcKitsune);
                 }
             }
@@ -233,6 +241,7 @@ namespace Project_Kitsune.Services
                 Debug.WriteLine($"ERRO ao buscar letra na LRCLIB: {ex.Message}");
             }
 
+            // 3. busca na API Kugou
             try {
                 string? letraKugou = await BuscarLetraKugou(musica.Titulo, musica.Artista, musica.Duracao, token);
                 if (!string.IsNullOrWhiteSpace(letraKugou)) {
@@ -240,6 +249,7 @@ namespace Project_Kitsune.Services
                     await File.WriteAllTextAsync(caminhoLrcKitsune, letraKugou);
                     musica.TemLetraDisponivel = true;
                     Debug.WriteLine($"[Letra] {musica.Titulo} - {musica.Artista}: Kugou");
+                    _origemLetra.Registar(caminhoLrcKitsune, FonteLetra.Kugou);   // e FonteLetra.Kugou no outro
                     return ParsearLetra(letraKugou, FonteLetra.Kugou, caminhoLrcKitsune);
                 }
             }
@@ -248,6 +258,22 @@ namespace Project_Kitsune.Services
                 Debug.WriteLine($"ERRO ao buscar letra na Kugou: {ex.Message}");
             }
 
+            // 2. busca na API lyrics.Ovh
+            try {
+                string? letraOvh = await BuscarLetraOvh(musica, token);
+                if (!string.IsNullOrWhiteSpace(letraOvh)) {
+                    token.ThrowIfCancellationRequested();
+                    await File.WriteAllTextAsync(caminhoLrcKitsune, letraOvh);
+                    musica.TemLetraDisponivel = true;
+                    Debug.WriteLine($"[Letra] {musica.Titulo} - {musica.Artista}: lyricsOvh");
+                    _origemLetra.Registar(caminhoLrcKitsune, FonteLetra.Lrclib);   // e FonteLetra.Kugou no outro
+                    return ParsearLetra(letraOvh, FonteLetra.Lrclib, caminhoLrcKitsune);
+                }
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex) {
+                Debug.WriteLine($"ERRO ao buscar letra na lyricsOvh: {ex.Message}");
+            }
             // 3. letra embutida na tag do ficheiro de áudio
             Letra? letraEmbutida = await Task.Run(() =>
             {
@@ -269,6 +295,45 @@ namespace Project_Kitsune.Services
             if (letraEmbutida != null) return letraEmbutida;
 
             return null;
+        }
+
+        private Letra ParsearLetra(string conteudo, FonteLetra fonte, string? caminhoOrigem)
+        {
+            Letra letra = new Letra()
+            {
+                ConteudoBruto = conteudo,
+                Fonte = fonte,
+                CaminhoOrigem = caminhoOrigem
+            };
+
+            string conteudoNormalizado = conteudo.Replace("\r\n", "\n").Replace("\r", "\n");
+            string[] linhas = conteudoNormalizado.Split('\n');
+
+            foreach (string linhaBruta in linhas) {
+                string linha = linhaBruta.Trim();
+                if (linha.Length == 0) continue;
+
+                var extraidas = ExtrairLinhasComTempo(linha);
+                if (extraidas.Count > 0)
+                    letra.Linhas.AddRange(extraidas);
+            }
+
+            if (letra.Linhas.Count > 0) {
+                letra.TemTimestampsReais = true;
+            }
+            else {
+                // Fallback: texto plano, sem timestamps
+                foreach (string linhaBruta in linhas) {
+                    string texto = linhaBruta.Trim();
+                    if (texto.Length > 0) {
+                        letra.Linhas.Add(new LinhaLetra { Tempo = TimeSpan.Zero, Texto = texto });
+                    }
+                }
+                letra.TemTimestampsReais = false;
+            }
+
+            letra.Linhas = letra.Linhas.OrderBy(l => l.Tempo).ToList();
+            return letra;
         }
 
         private static async Task<string?> LerJsonAsync(string url, string userAgent, CancellationToken token)
@@ -320,45 +385,6 @@ namespace Project_Kitsune.Services
             return resultado;
         }
 
-        private Letra ParsearLetra(string conteudo, FonteLetra fonte, string? caminhoOrigem)
-        {
-            Letra letra = new Letra()
-            {
-                ConteudoBruto = conteudo,
-                Fonte = fonte,
-                CaminhoOrigem = caminhoOrigem
-            };
-
-            string conteudoNormalizado = conteudo.Replace("\r\n", "\n").Replace("\r", "\n");
-            string[] linhas = conteudoNormalizado.Split('\n');
-
-            foreach (string linhaBruta in linhas) {
-                string linha = linhaBruta.Trim();
-                if (linha.Length == 0) continue;
-
-                var extraidas = ExtrairLinhasComTempo(linha);
-                if (extraidas.Count > 0)
-                    letra.Linhas.AddRange(extraidas);
-            }
-
-            if (letra.Linhas.Count > 0) {
-                letra.TemTimestampsReais = true; // encontrou pelo menos uma linha com timestamp válido
-            }
-            else {
-                // Fallback: texto plano, sem timestamps
-                foreach (string linhaBruta in linhas) {
-                    string texto = linhaBruta.Trim();
-                    if (texto.Length > 0) {
-                        letra.Linhas.Add(new LinhaLetra { Tempo = TimeSpan.Zero, Texto = texto });
-                    }
-                }
-                letra.TemTimestampsReais = false;
-            }
-
-            letra.Linhas = letra.Linhas.OrderBy(l => l.Tempo).ToList();
-            return letra;
-        }
-
         // ───────────────────────────── LRCLIB ─────────────────────────────
 
         private async Task<string?> BuscarLetraLrclib(string titulo, string artista, string album, TimeSpan duracao, CancellationToken token)
@@ -407,7 +433,6 @@ namespace Project_Kitsune.Services
                          $"&artist_name={Uri.EscapeDataString(artista)}" +
                          $"&duration={(int)Math.Round(duracao.TotalSeconds)}";
 
-            // álbum é opcional; "Unknown Album" só estraga a correspondência
             if (!Desconhecido(album))
                 url += $"&album_name={Uri.EscapeDataString(album)}";
 
@@ -421,10 +446,11 @@ namespace Project_Kitsune.Services
         private async Task<string?> LrclibSearch(string titulo, string artista, TimeSpan duracao, CancellationToken token)
         {
             string url = $"https://lrclib.net/api/search?track_name={Uri.EscapeDataString(titulo)}";
-            if (!Desconhecido(artista))
-                url += $"&artist_name={Uri.EscapeDataString(artista)}";
+
+            if (!Desconhecido(artista)) { url += $"&artist_name={Uri.EscapeDataString(artista)}"; }
 
             string? json = await LerJsonAsync(url, UserAgentKitsune, token);
+
             if (json == null) return null;
 
             using JsonDocument doc = JsonDocument.Parse(json);
@@ -435,8 +461,7 @@ namespace Project_Kitsune.Services
             double melhorDif = double.MaxValue;
 
             foreach (JsonElement item in doc.RootElement.EnumerateArray()) {
-                if (!item.TryGetProperty("duration", out JsonElement durEl) ||
-                    durEl.ValueKind != JsonValueKind.Number) continue;
+                if (!item.TryGetProperty("duration", out JsonElement durEl) || durEl.ValueKind != JsonValueKind.Number) continue;
 
                 double dif = Math.Abs(durEl.GetDouble() - duracao.TotalSeconds);
                 if (dif > ToleranciaSegundos) continue;
@@ -448,7 +473,6 @@ namespace Project_Kitsune.Services
                                     s.ValueKind == JsonValueKind.String &&
                                     !string.IsNullOrWhiteSpace(s.GetString());
 
-                // sincronizada ganha sempre; empate -> duração mais próxima
                 bool melhor = ( sincronizada && !melhorSincronizada ) ||
                               ( sincronizada == melhorSincronizada && dif < melhorDif );
 
@@ -478,13 +502,14 @@ namespace Project_Kitsune.Services
                 (string Id, string AccessKey)? candidato = EscolherCandidatoKugou(jsonBusca, titulo, artista, duracao);
                 if (candidato == null) {
                     Debug.WriteLine($"[Letra] Kugou sem candidato: {titulo} - {artista}");
-                    return null; // nenhum resultado confere -> não grava nada
+                    return null;
                 }
 
                 string urlLetra = $"https://lyrics.kugou.com/download?ver=1&client=pc" +
                                   $"&id={Uri.EscapeDataString(candidato.Value.Id)}" +
                                   $"&accesskey={Uri.EscapeDataString(candidato.Value.AccessKey)}" +
                                   $"&fmt=lrc&charset=utf8";
+
                 string? jsonLetra = await LerJsonAsync(urlLetra, UserAgentBrowser, token);
                 if (jsonLetra == null) return null;
 
@@ -547,7 +572,6 @@ namespace Project_Kitsune.Services
             return melhor;
         }
 
-        // o "id" pode vir como texto ou como número
         private static string? LerTexto(JsonElement el, string nome)
         {
             if (!el.TryGetProperty(nome, out JsonElement v)) return null;
@@ -566,6 +590,28 @@ namespace Project_Kitsune.Services
             return n.Length > 0 && ( n.Contains(normEsperado) || normEsperado.Contains(n) );
         }
 
+        // ───────────────────────────── lyricsOvh ─────────────────────────────
+
+        private async Task<string?> BuscarLetraOvh(Music musica, CancellationToken token)
+        {
+            if (musica.Artista.StartsWith("Unknown") || string.IsNullOrWhiteSpace(musica.Titulo))
+                return null;
+
+            var url = $"https://api.lyrics.ovh/v1/{Uri.EscapeDataString(musica.Artista)}/{Uri.EscapeDataString(musica.Titulo)}";
+            try {
+                using var resp = await _httpClient.GetAsync(url, token);
+                if (!resp.IsSuccessStatusCode) return null; // 404 = sem letra
+
+                using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync(token));
+                if (!doc.RootElement.TryGetProperty("lyrics", out var l)) return null;
+
+                var texto = l.GetString()?.Trim();
+                return string.IsNullOrEmpty(texto) ? null : texto;
+            }
+            catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
+            catch { return null; }
+        }
+
         // ───────────────────────────── Biblioteca ─────────────────────────────
 
         public async Task CarregarBibliotecaAsync(IEnumerable<string> pastas, string criterio, bool descendente)
@@ -574,15 +620,30 @@ namespace Project_Kitsune.Services
             var emFalta = pastasValidas.Where(p => !Directory.Exists(p)).ToList();
             if (emFalta.Count > 0) PastasEmFalta?.Invoke(emFalta);
 
-            var todasMusicas = new List<Music>();
-            object lockMusicas = new();
+            Dictionary<string, (Music Musica, long DataModificacao)> cacheCompleto =
+                pastasValidas.Any(Directory.Exists)
+                    ? databaseService.ObterTodoCache()
+                    : new Dictionary<string, (Music Musica, long DataModificacao)>();
 
-            var tarefas = pastasValidas.Select(pasta => Task.Run(() =>
+            List<Music> todasMusicas = await Task.Run(() =>
             {
-                LerMusicasDaPasta(pasta, lote => { lock (lockMusicas) { todasMusicas.AddRange(lote); } });
-            })).ToList();
+                var resultado = new List<Music>();
+                object lockMusicas = new();
 
-            await Task.WhenAll(tarefas);
+                foreach (string pasta in pastasValidas) {
+                    LerMusicasDaPasta(
+                        pasta,
+                        lote =>
+                        {
+                            lock (lockMusicas) {
+                                resultado.AddRange(lote);
+                            }
+                        },
+                        cacheCompleto);
+                }
+
+                return resultado;
+            });
 
             List<Music> ordenadas = _ordenacaoService.Ordenar(todasMusicas, criterio, descendente);
 
@@ -596,23 +657,40 @@ namespace Project_Kitsune.Services
 
         private void AtualizarMusicas(List<Music> novasOrdenadas)
         {
-            for (int i = Musicas.Count - 1; i >= 0; i--) {
-                if (!novasOrdenadas.Any(m => m.Caminho == Musicas[i].Caminho))
-                    Musicas.RemoveAt(i);
+            var existentes = new Dictionary<string, Music>(
+                Musicas.Count,
+                StringComparer.Ordinal);
+
+            foreach (Music musica in Musicas) {
+                if (!existentes.ContainsKey(musica.Caminho))
+                    existentes.Add(musica.Caminho, musica);
             }
 
-            foreach (var m in novasOrdenadas) {
-                if (!Musicas.Any(x => x.Caminho == m.Caminho))
-                    Musicas.Add(m);
+            bool mesmaOrdem = Musicas.Count == novasOrdenadas.Count;
+
+            for (int i = 0; mesmaOrdem && i < novasOrdenadas.Count; i++) {
+                Music musicaDesejada = existentes.TryGetValue(
+                    novasOrdenadas[i].Caminho,
+                    out Music? musicaExistente)
+                        ? musicaExistente
+                        : novasOrdenadas[i];
+
+                if (!ReferenceEquals(Musicas[i], musicaDesejada))
+                    mesmaOrdem = false;
             }
 
-            for (int novoIndice = 0; novoIndice < novasOrdenadas.Count; novoIndice++) {
-                string caminho = novasOrdenadas[novoIndice].Caminho;
-                int indiceAtual = -1;
-                for (int i = 0; i < Musicas.Count; i++) {
-                    if (Musicas[i].Caminho == caminho) { indiceAtual = i; break; }
-                }
-                if (indiceAtual != -1 && indiceAtual != novoIndice) Musicas.Move(indiceAtual, novoIndice);
+            if (mesmaOrdem) return;
+
+            Musicas.Clear();
+
+            foreach (Music nova in novasOrdenadas) {
+                Music musica = existentes.TryGetValue(
+                    nova.Caminho,
+                    out Music? musicaExistente)
+                        ? musicaExistente
+                        : nova;
+
+                Musicas.Add(musica);
             }
         }
 
@@ -624,10 +702,11 @@ namespace Project_Kitsune.Services
                 var watcher = new FileSystemWatcher(pasta)
                 {
                     EnableRaisingEvents = true,
-                    NotifyFilter = NotifyFilters.FileName
+                    NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.CreationTime
                 };
 
                 watcher.Created += Watcher_Created;
+                watcher.Changed += Watcher_Changed;
                 watcher.Deleted += Watcher_Deleted;
                 watcher.Renamed += Watcher_Renamed;
                 watcher.Error += Watcher_Error;
@@ -638,14 +717,20 @@ namespace Project_Kitsune.Services
 
         public void PararMonitorizacao()
         {
-            foreach (var watcher in _watchers) {
+            foreach (FileSystemWatcher watcher in _watchers) {
                 watcher.EnableRaisingEvents = false;
                 watcher.Dispose();
             }
+
             _watchers.Clear();
+
+            foreach (CancellationTokenSource cts in _alteracoesPendentes.Values)
+                cts.Cancel();
+
+            _alteracoesPendentes.Clear();
         }
 
-        private void ReordenarMusicas()
+        public void ReordenarMusicas()
         {
             Configuracao config = _configuracaoService.CarregarConfiguracao();
             List<Music> ordenadas = _ordenacaoService.Ordenar(Musicas.ToList(), config.OrdemMusicList, config.OrdemDescendente);
@@ -721,6 +806,88 @@ namespace Project_Kitsune.Services
             }
         }
 
+        private async void Watcher_Changed(object sender, FileSystemEventArgs e)
+        {
+            if (!ExtensoesValidas.Contains(Path.GetExtension(e.FullPath)))
+                return;
+
+            CancellationTokenSource novoCts = new();
+            CancellationTokenSource? anterior =
+                _alteracoesPendentes.AddOrUpdate(
+                    e.FullPath,
+                    novoCts,
+                    (_, existente) =>
+                    {
+                        existente.Cancel();
+                        existente.Dispose();
+                        return novoCts;
+                    });
+
+            try {
+                await Task.Delay(500, novoCts.Token);
+
+                if (!await AguardarArquivoLivreAsync(e.FullPath))
+                    return;
+
+                Music? musicaAtualizada = LerMusicaPorCaminho(e.FullPath);
+
+                if (musicaAtualizada == null)
+                    return;
+
+                long dataModificacao =
+                    new FileInfo(e.FullPath).LastWriteTimeUtc.Ticks;
+
+                databaseService.SalvarMusicaCompleta(
+                    musicaAtualizada,
+                    dataModificacao);
+
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    Music? musicaExistente = Musicas.FirstOrDefault(m =>
+                        string.Equals(
+                            m.Caminho,
+                            musicaAtualizada.Caminho,
+                            StringComparison.OrdinalIgnoreCase));
+
+                    if (musicaExistente == null) {
+                        Musicas.Add(musicaAtualizada);
+                    }
+                    else {
+                        musicaExistente.Titulo = musicaAtualizada.Titulo;
+                        musicaExistente.Artista = musicaAtualizada.Artista;
+                        musicaExistente.Album = musicaAtualizada.Album;
+                        musicaExistente.Genero = musicaAtualizada.Genero;
+                        musicaExistente.Duracao = musicaAtualizada.Duracao;
+                        musicaExistente.DuracaoArredondada =
+                            musicaAtualizada.DuracaoArredondada;
+                        musicaExistente.Image = musicaAtualizada.Image;
+                        musicaExistente.TemLetraDisponivel =
+                            musicaAtualizada.TemLetraDisponivel;
+                    }
+
+                    ReordenarMusicas();
+                });
+            }
+            catch (OperationCanceledException) {
+            }
+            catch (Exception ex) {
+                Debug.WriteLine(
+                    $"Erro ao atualizar ficheiro '{e.FullPath}': {ex}");
+            }
+            finally {
+                if (_alteracoesPendentes.TryGetValue(
+                        e.FullPath,
+                        out CancellationTokenSource? atual) &&
+                    ReferenceEquals(atual, novoCts)) {
+                    _alteracoesPendentes.TryRemove(
+                        e.FullPath,
+                        out CancellationTokenSource? removido);
+
+                    removido?.Dispose();
+                }
+            }
+        }
+
         private async Task<bool> AguardarArquivoLivreAsync(string caminho)
         {
             for (int tentativa = 0; tentativa < 10; tentativa++) {
@@ -737,12 +904,30 @@ namespace Project_Kitsune.Services
 
         public async Task GarantirBibliotecaCarregadaAsync(IEnumerable<string> pastas, bool forcar = false)
         {
-            if (_inicializado && !forcar) return;
-            _inicializado = true;
+            if (!await _carregamentoSemaphore.WaitAsync(0))
+                return;
 
-            Configuracao config = _configuracaoService.CarregarConfiguracao();
-            await CarregarBibliotecaAsync(pastas, config.OrdemMusicList, config.OrdemDescendente);
-            IniciarMonitorizacao(pastas);
+            try {
+                if (_inicializado && !forcar)
+                    return;
+
+                Configuracao config = _configuracaoService.CarregarConfiguracao();
+
+                await CarregarBibliotecaAsync(
+                    pastas,
+                    config.OrdemMusicList,
+                    config.OrdemDescendente);
+
+                IniciarMonitorizacao(pastas);
+                _inicializado = true;
+            }
+            catch (Exception ex) {
+                Debug.WriteLine($"Erro ao carregar a biblioteca: {ex}");
+                _inicializado = false;
+            }
+            finally {
+                _carregamentoSemaphore.Release();
+            }
         }
 
         public void EliminarMusica(Music musica)
@@ -772,6 +957,15 @@ namespace Project_Kitsune.Services
             musica.Artista = novoArtista;
             musica.Album = novoAlbum;
             musica.Genero = novoGenero;
+
+            WeakReferenceMessenger.Default.Send(new BibliotecaAlteradaMessage());
+            ReordenarMusicas();
+        }
+
+        public void SalvarEdicaoPlyalist(Playlist playlist, string nomeNovo)
+        {
+            databaseService.AtualizarPlaylist(playlist.Id, nomeNovo);
+            playlist.Name = nomeNovo;
         }
 
         public async Task SalvarLetra(string caminhoLrc, string texto)
@@ -793,6 +987,12 @@ namespace Project_Kitsune.Services
                 if (File.Exists(tmp)) File.Delete(tmp);
                 throw;
             }
+        }
+
+        public void Dispose()
+        {
+            PararMonitorizacao();
+            _carregamentoSemaphore.Dispose();
         }
     }
 }

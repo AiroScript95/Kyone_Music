@@ -1,12 +1,12 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Project_Kitsune.Helpers;
-using Project_Kitsune.Models;
-using Project_Kitsune.Services;
-using Project_Kitsune.ViewModels;
+using KyoneMusic.Helpers;
+using KyoneMusic.Models;
+using KyoneMusic.Services;
+using KyoneMusic.ViewModels;
 using System.Windows;
 using System.Windows.Media;
 
-namespace Project_Kitsune.Views
+namespace KyoneMusic.Views
 {
     /// <summary>
     /// Lógica interna para EditarMusicaWindow.xaml
@@ -19,8 +19,8 @@ namespace Project_Kitsune.Views
         {
             _shellViewModel = App.ServiceProvider.GetRequiredService<ShellViewModel>();
             _shellViewModel.PropertyChanged += ShellViewModel_PropertyChanged;
-            ((App)Application.Current).TemaAlterado += AtualizarCorBordaNativa;
-            ((App)Application.Current).TemaAlterado += AtualizarCorTitle;
+            ( (App)Application.Current ).TemaAlterado += AtualizarCorBordaNativa;
+            ( (App)Application.Current ).TemaAlterado += AtualizarCorTitle;
 
             InitializeComponent();
             var vm = new EditarMusicaViewModel(musica, biblioteca);
@@ -40,8 +40,7 @@ namespace Project_Kitsune.Views
 
         private void AtualizarCorTitle()
         {
-            if (Application.Current.Resources["SurfaceBrush"] is SolidColorBrush brush)
-            {
+            if (Application.Current.Resources["SurfaceBrush"] is SolidColorBrush brush) {
                 DwmHelper.DefinirCorTitleBar(this, brush.Color);
             }
         }
@@ -57,8 +56,7 @@ namespace Project_Kitsune.Views
                 _ => "BorderBrush2"
             };
 
-            if (TryFindResource(chaveRecurso) is SolidColorBrush brush)
-            {
+            if (TryFindResource(chaveRecurso) is SolidColorBrush brush) {
                 DwmHelper.DefinirCorBorda(this, brush.Color);
             }
         }
@@ -72,8 +70,8 @@ namespace Project_Kitsune.Views
         private void EditarMusicaWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
         {
             _shellViewModel.PropertyChanged -= ShellViewModel_PropertyChanged;
-            ((App)Application.Current).TemaAlterado -= AtualizarCorBordaNativa;
-            ((App)Application.Current).TemaAlterado -= AtualizarCorTitle;
+            ( (App)Application.Current ).TemaAlterado -= AtualizarCorBordaNativa;
+            ( (App)Application.Current ).TemaAlterado -= AtualizarCorTitle;
         }
 
         private void Cancelar_Click(object sender, RoutedEventArgs e) => Close();

@@ -1,6 +1,6 @@
 ﻿using System.Windows.Controls;
 
-namespace Project_Kitsune.Views.ShellPages
+namespace KyoneMusic.Views.ShellPages
 {
     /// <summary>
     /// Interaction logic for ConfiguracoesPage.xaml

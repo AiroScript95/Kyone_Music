@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Project_Kitsune.Models
+namespace KyoneMusic.Models
 {
     public class PlaylistComCapa
     {

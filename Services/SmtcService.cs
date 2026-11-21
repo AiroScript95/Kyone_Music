@@ -1,11 +1,11 @@
-﻿using Project_Kitsune.Models;
-using Project_Kitsune.ViewModels;
+﻿using KyoneMusic.Models;
+using KyoneMusic.ViewModels;
 using System.Windows;
 using System.Windows.Interop;
 using Windows.Media;
 using Windows.Storage.Streams;
 
-namespace Project_Kitsune.Services
+namespace KyoneMusic.Services
 {
     public class SmtcService : IDisposable
     {
@@ -25,7 +25,6 @@ namespace Project_Kitsune.Services
             _smtc.IsNextEnabled = true;
             _smtc.IsPreviousEnabled = true;
 
-            // Registra os ouvintes do sistema
             _smtc.ButtonPressed += Smtc_ButtonPressed;
             _smtc.ShuffleEnabledChangeRequested += Smtc_ShuffleModeChangeRequested;
             _smtc.AutoRepeatModeChangeRequested += Smtc_AutoRepeatModeChangeRequested;
@@ -38,8 +37,7 @@ namespace Project_Kitsune.Services
         {
             await Application.Current.Dispatcher.InvokeAsync(() =>
             {
-                switch (args.Button)
-                {
+                switch (args.Button) {
                     case SystemMediaTransportControlsButton.Play:
                         _player.Retomar();
                         break;
@@ -87,18 +85,15 @@ namespace Project_Kitsune.Services
 
         private void Player_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(PlayerViewModel.MusicaAtual))
-            {
+            if (e.PropertyName == nameof(PlayerViewModel.MusicaAtual)) {
                 AtualizarMetadados(_player.MusicaAtual);
             }
-            else if (e.PropertyName == nameof(PlayerViewModel.EstaTocando))
-            {
+            else if (e.PropertyName == nameof(PlayerViewModel.EstaTocando)) {
                 _smtc.PlaybackStatus = _player.EstaTocando
                     ? MediaPlaybackStatus.Playing
                     : MediaPlaybackStatus.Paused;
             }
-            else if (e.PropertyName == nameof(PlayerViewModel.PosicaoAtualMs) || e.PropertyName == nameof(PlayerViewModel.DuracaoTotalMs))
-            {
+            else if (e.PropertyName == nameof(PlayerViewModel.PosicaoAtualMs) || e.PropertyName == nameof(PlayerViewModel.DuracaoTotalMs)) {
                 AtualizarTimeline();
             }
         }
@@ -107,8 +102,7 @@ namespace Project_Kitsune.Services
         {
             var updater = _smtc.DisplayUpdater;
 
-            if (musica == null)
-            {
+            if (musica == null) {
                 updater.ClearAll();
                 _smtc.PlaybackStatus = MediaPlaybackStatus.Stopped;
                 updater.Update();
@@ -121,13 +115,10 @@ namespace Project_Kitsune.Services
             updater.MusicProperties.Artist = musica.Artista ?? string.Empty;
             updater.MusicProperties.AlbumTitle = musica.Album ?? string.Empty;
 
-            if (musica.Image != null && musica.Image.Length > 0)
-            {
-                try
-                {
+            if (musica.Image != null && musica.Image.Length > 0) {
+                try {
                     var stream = new InMemoryRandomAccessStream();
-                    using (var writer = new DataWriter(stream.GetOutputStreamAt(0)))
-                    {
+                    using (var writer = new DataWriter(stream.GetOutputStreamAt(0))) {
                         writer.WriteBytes(musica.Image);
                         await writer.StoreAsync();
                         await writer.FlushAsync();
@@ -136,13 +127,11 @@ namespace Project_Kitsune.Services
                     stream.Seek(0);
                     updater.Thumbnail = RandomAccessStreamReference.CreateFromStream(stream);
                 }
-                catch
-                {
+                catch {
                     updater.Thumbnail = null;
                 }
             }
-            else
-            {
+            else {
                 updater.Thumbnail = null;
             }
 
@@ -168,16 +157,14 @@ namespace Project_Kitsune.Services
 
         public void Dispose()
         {
-            if (_smtc != null)
-            {
+            if (_smtc != null) {
                 _smtc.ButtonPressed -= Smtc_ButtonPressed;
                 _smtc.ShuffleEnabledChangeRequested -= Smtc_ShuffleModeChangeRequested;
                 _smtc.AutoRepeatModeChangeRequested -= Smtc_AutoRepeatModeChangeRequested;
                 _smtc.PlaybackPositionChangeRequested -= Smtc_PlaybackPositionChangeRequested;
             }
 
-            if (_player != null)
-            {
+            if (_player != null) {
                 _player.PropertyChanged -= Player_PropertyChanged;
             }
 

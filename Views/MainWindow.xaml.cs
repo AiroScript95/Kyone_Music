@@ -1,9 +1,9 @@
 ﻿using HandyControl.Tools;
 using Microsoft.Extensions.DependencyInjection;
-using Project_Kitsune.Helpers;
-using Project_Kitsune.Models;
-using Project_Kitsune.Services;
-using Project_Kitsune.ViewModels;
+using KyoneMusic.Helpers;
+using KyoneMusic.Models;
+using KyoneMusic.Services;
+using KyoneMusic.ViewModels;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
@@ -12,7 +12,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 
-namespace Project_Kitsune.Views
+namespace KyoneMusic.Views
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -23,11 +23,15 @@ namespace Project_Kitsune.Views
         private readonly ShellViewModel _shellViewModel;
         private readonly SmtcService smtcService;
         private readonly ConfiguracaoService configuracaoService;
+        private readonly DatabaseService databaseService;
         private readonly AudioPlayerService audioPlayerService;
         private readonly PlayerViewModel player;
         private HwndSource? _hwndSource;
+        private readonly SemaphoreSlim _atualizacaoBibliotecaSemaphore = new(1, 1);
+        private readonly BibliotecaService bibliotecaService;
         private const int WM_DEVICECHANGE = 0x0219;
         private const int DBT_DEVICEARRIVAL = 0x8000;
+        private const int DBT_DEVICEREMOVECOMPLETE = 0x8004;
 
         /* ===== CONSTRUTOR ===== */
 
@@ -42,6 +46,8 @@ namespace Project_Kitsune.Views
             smtcService = App.ServiceProvider.GetRequiredService<SmtcService>();
             configuracaoService = App.ServiceProvider.GetRequiredService<ConfiguracaoService>();
             audioPlayerService = App.ServiceProvider.GetRequiredService<AudioPlayerService>();
+            bibliotecaService = App.ServiceProvider.GetRequiredService<BibliotecaService>();
+            databaseService = App.ServiceProvider.GetRequiredService<DatabaseService>();
 
             Configuracao configuracao = configuracaoService.CarregarConfiguracao();
 
@@ -95,15 +101,25 @@ namespace Project_Kitsune.Views
             if (DataContext is MainViewModel vm) vm.PesquisaAberta = false;
         }
 
-        private async Task WndProc_TratarDeviceArrivalAsync()
+        private async Task WndProc_TratarAlteracaoDispositivoAsync()
         {
+            await _atualizacaoBibliotecaSemaphore.WaitAsync();
+
             try {
-                BibliotecaService bibliotecaService = App.ServiceProvider.GetRequiredService<BibliotecaService>();
+                // Aguarda o Windows atualizar o estado do dispositivo e das unidades.
+                await Task.Delay(500);
+
                 Configuracao config = configuracaoService.CarregarConfiguracao();
-                await bibliotecaService.GarantirBibliotecaCarregadaAsync(config.RotaMusica, forcar: true);
+
+                await bibliotecaService.GarantirBibliotecaCarregadaAsync(
+                    config.RotaMusica,
+                    forcar: true);
             }
             catch (Exception ex) {
-                Debug.WriteLine($"Erro ao atualizar biblioteca após dispositivo: {ex}");
+                Debug.WriteLine($"Erro ao atualizar biblioteca após alteração de dispositivo: {ex}");
+            }
+            finally {
+                _atualizacaoBibliotecaSemaphore.Release();
             }
         }
 
@@ -112,8 +128,9 @@ namespace Project_Kitsune.Views
             if (msg == WM_DEVICECHANGE) {
                 int evento = wParam.ToInt32();
 
-                if (evento == DBT_DEVICEARRIVAL) {
-                    _ = WndProc_TratarDeviceArrivalAsync();
+                if (evento == DBT_DEVICEARRIVAL ||
+                    evento == DBT_DEVICEREMOVECOMPLETE) {
+                    _ = WndProc_TratarAlteracaoDispositivoAsync();
                 }
             }
 
@@ -173,22 +190,31 @@ namespace Project_Kitsune.Views
 
         private void SalvarDados()
         {
-            Configuracao configuracao = configuracaoService.CarregarConfiguracao();
-            configuracao.JanelaLargura = this.RestoreBounds.Width;
-            configuracao.JanelaAltura = this.RestoreBounds.Height;
-            configuracao.JanelaY = this.RestoreBounds.Top;
-            configuracao.JanelaX = this.RestoreBounds.Left;
+            try {
+                databaseService.GuardarFila(player.Fila.Select(musica => musica.Caminho));
+            }
+            catch (Exception ex) {
+                Debug.WriteLine($"Erro ao salvar a fila ao fechar o aplicativo: {ex}");
+            }
+            configuracaoService.AtualizarConfiguracao(configuracao =>
+            {
+                configuracao.JanelaLargura = RestoreBounds.Width;
+                configuracao.JanelaAltura = RestoreBounds.Height;
+                configuracao.JanelaY = RestoreBounds.Top;
+                configuracao.JanelaX = RestoreBounds.Left;
 
-            if (player.MusicaAtual != null) {
+                if (player.MusicaAtual == null)
+                    return;
+
                 configuracao.UltimaMusica ??= new UltimaMusicaInfo();
+
                 configuracao.UltimaMusica.Caminho = player.MusicaAtual.Caminho;
                 configuracao.UltimaMusica.PosicaoMs = audioPlayerService.ObterPosicaoAtual();
                 configuracao.UltimaMusica.DuracaoMS = audioPlayerService.ObterDuracaoTotal();
                 configuracao.UltimaMusica.EstavaTocando = player.EstaTocando;
                 configuracao.UltimaMusica.Gosto = player.GostoAtual;
-            }
-
-            configuracaoService.GuardarConfiguracao(configuracao);
+                configuracao.UltimaMusica.SalvoEm = DateTime.UtcNow;
+            });
         }
 
         private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)

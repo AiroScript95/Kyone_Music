@@ -1,7 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
-using Project_Kitsune.Models;
-using Project_Kitsune.Services;
+using KyoneMusic.Models;
+using KyoneMusic.Helpers;
+using KyoneMusic.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -10,10 +11,10 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
-using Project_Kitsune.ViewModels.ShellPages.SearchPages;
+using KyoneMusic.ViewModels.ShellPages.SearchPages;
 using System.Windows;
 
-namespace Project_Kitsune.ViewModels.ShellPages
+namespace KyoneMusic.ViewModels.ShellPages
 {
     public partial class SearchResultPageViewModel : INotifyPropertyChanged
     {
@@ -27,11 +28,8 @@ namespace Project_Kitsune.ViewModels.ShellPages
         public bool verTodosAlbuns { get; set; } = false;
         public bool verTodosPlaylist { get; set; } = false;
 
-        private static string Texto(string chave, string termo) =>
-            string.Format((string)Application.Current.FindResource(chave), termo);
-
-        public string Titulo => Texto("Str_ResultadosPara", searchString);
-        public string TextoSemResultados => Texto("Str_SemResultadosPara", searchString);
+        public string Titulo => TextoHelper.Texto("Str_ResultadosPara", searchString);
+        public string TextoSemResultados => TextoHelper.Texto("Str_SemResultadosPara", searchString);
 
         private ObservableCollection<Music> _resultadosMusica = new();
 

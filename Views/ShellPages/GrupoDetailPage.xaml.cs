@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Project_Kitsune.Models;
-using Project_Kitsune.ViewModels;
-using Project_Kitsune.ViewModels.ShellPages;
+using KyoneMusic.Models;
+using KyoneMusic.ViewModels;
+using KyoneMusic.ViewModels.ShellPages;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,7 +17,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace Project_Kitsune.Views.ShellPages
+namespace KyoneMusic.Views.ShellPages
 {
     /// <summary>
     /// Interação lógica para GrupoDetailPage.xam
@@ -31,10 +31,8 @@ namespace Project_Kitsune.Views.ShellPages
 
         private void StackPanel_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            if (sender is FrameworkElement elemento && elemento.DataContext is Music musica)
-            {
-                if (DataContext is GrupoDetailPageViewModel viewModel)
-                {
+            if (sender is FrameworkElement elemento && elemento.DataContext is Music musica) {
+                if (DataContext is GrupoDetailPageViewModel viewModel) {
                     viewModel.TocarMusica(musica);
                 }
             }
@@ -42,22 +40,19 @@ namespace Project_Kitsune.Views.ShellPages
 
         private void ContextMenu_Opening(object sender, ContextMenuEventArgs e)
         {
-            try
-            {
+            try {
                 var playerViewModel = App.ServiceProvider.GetRequiredService<PlayerViewModel>();
 
                 if (sender is FrameworkElement { DataContext: Music musica }
-                    && musica.Caminho == playerViewModel.MusicaAtual?.Caminho)
-                {
+                    && musica.Caminho == playerViewModel.MusicaAtual?.Caminho) {
                     e.Handled = true; // música a tocar: não abre menu
                     return;
                 }
 
                 playerViewModel.CarregarPlaylistsDisponiveis();
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.ToString());
+            catch (Exception ex) {
+                MessageBox.Show(ex.Message);
             }
         }
     }

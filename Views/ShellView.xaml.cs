@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Project_Kitsune.Models;
-using Project_Kitsune.Services;
-using Project_Kitsune.ViewModels;
-using Project_Kitsune.ViewModels.ShellPages;
+using KyoneMusic.Models;
+using KyoneMusic.Services;
+using KyoneMusic.ViewModels;
+using KyoneMusic.ViewModels.ShellPages;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -12,8 +12,9 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using IOPath = System.IO.Path;
+using System.ComponentModel;
 
-namespace Project_Kitsune.Views
+namespace KyoneMusic.Views
 {
     public partial class ShellView : UserControl
     {
@@ -22,6 +23,14 @@ namespace Project_Kitsune.Views
         private readonly Dictionary<LinhaLetra, FrameworkElement> _mapaLinhas = new();
         private BibliotecaService biblioteca;
         private Point _pontoInicial;
+        private DateTime _ultimaInteracaoUsuarioScroll = DateTime.MinValue;
+        private bool _recriarAncoraScroll;
+        private double _offsetBaseScroll;
+        private double _progressoBaseScroll;
+        private double _offsetAlvoScroll;
+        private DateTime _ultimoTickScroll;
+        private DateTime _ultimaAtualizacaoAlvoScroll = DateTime.MinValue;
+        private static readonly TimeSpan IntervaloAtualizacaoAlvoScroll = TimeSpan.FromMilliseconds(33);
 
         public ShellView()
         {
@@ -51,7 +60,7 @@ namespace Project_Kitsune.Views
             ItemsLetras.ItemContainerGenerator.StatusChanged -= ItemsLetras_StatusChanged;
         }
 
-        private void Player_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        private void Player_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(PlayerViewModel.LinhaAtual)) {
                 AtualizarScrollLetra(player);
@@ -63,6 +72,23 @@ namespace Project_Kitsune.Views
         }
 
         /* ===== LETRAS EVENTS / SCROLL ===== */
+
+        private void RegistrarInteracaoUsuarioScroll(object sender, RoutedEventArgs e)
+        {
+            _ultimaInteracaoUsuarioScroll = DateTime.UtcNow;
+            _timerScroll?.Stop();
+            _recriarAncoraScroll = true;
+        }
+
+        private void ScrollLetras_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            RegistrarInteracaoUsuarioScroll(sender, e);
+        }
+
+        private void ScrollLetras_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            RegistrarInteracaoUsuarioScroll(sender, e);
+        }
 
         private void ItemsLetras_StatusChanged(object? sender, EventArgs e)
         {
@@ -81,64 +107,108 @@ namespace Project_Kitsune.Views
         private void AtualizarScrollLetra(PlayerViewModel player)
         {
             if (player.LetraAtual == null || ScrollLetras == null) return;
+            if (DateTime.UtcNow - _ultimaInteracaoUsuarioScroll < TimeSpan.FromMilliseconds(800)) {
+                return;
+            }
+            if (!player.LetraAtual.Sincronizada && player.ScrollAutomaticoAtivo) {
+                DateTime agora = DateTime.UtcNow;
+
+                if (agora - _ultimaAtualizacaoAlvoScroll < IntervaloAtualizacaoAlvoScroll)
+                    return;
+
+                _ultimaAtualizacaoAlvoScroll = agora;
+            }
 
             if (player.LetraAtual.Sincronizada) {
-                if (player.LinhaAtual == null) return;
-                _mapaLinhas.TryGetValue(player.LinhaAtual, out var elementoLinha);
+                LinhaLetra? linha = player.LinhaAtual;
+                if (linha == null) return;
 
-                if (elementoLinha != null) {
-                    Point posicaoRelativa = elementoLinha.TransformToVisual(ScrollLetras).Transform(new Point(0, 0));
-                    double offsetAlvo = ScrollLetras.VerticalOffset + posicaoRelativa.Y - ( ScrollLetras.ViewportHeight / 2.5 ) + ( elementoLinha.RenderSize.Height / 2 );
-                    AnimarScrollSuave(ScrollLetras, Math.Max(0, offsetAlvo));
+                if (!_mapaLinhas.TryGetValue(linha, out FrameworkElement? elementoLinha) ||
+                    elementoLinha == null) {
+                    ItemsLetras.UpdateLayout();
+                    elementoLinha = ItemsLetras.ItemContainerGenerator.ContainerFromItem(linha) as FrameworkElement;
+
+                    if (elementoLinha == null) return;
+
+                    _mapaLinhas[linha] = elementoLinha;
                 }
-                else {
-                    int indice = player.LetraAtual.Linhas.IndexOf(player.LinhaAtual);
-                    if (indice >= 0) {
-                        double offsetAlvo = Math.Max(0, ( indice * 25 ) - ( ScrollLetras.ViewportHeight / 2 ));
-                        AnimarScrollSuave(ScrollLetras, offsetAlvo);
-                    }
-                }
+
+                Point posicaoRelativa = elementoLinha.TransformToVisual(ScrollLetras).Transform(new Point(0, 0));
+                double offsetAlvo = ScrollLetras.VerticalOffset
+                                  + posicaoRelativa.Y
+                                  - ( ScrollLetras.ViewportHeight / 2.5 )
+                                  + ( elementoLinha.RenderSize.Height / 2 );
+
+                AnimarScrollSuave(ScrollLetras, Math.Max(0, offsetAlvo));
             }
             else {
                 if (player.DuracaoTotalMs <= 0) return;
 
                 if (player.ScrollAutomaticoAtivo) {
                     double progresso = (double)player.PosicaoAtualMs / player.DuracaoTotalMs;
-                    double offsetMaximo = ScrollLetras.ExtentHeight - ScrollLetras.ViewportHeight - ItemsLetras.Margin.Bottom;
+                    double alturaFonte = TextoFonteLetra.Visibility == Visibility.Visible ? TextoFonteLetra.ActualHeight
+                                       + TextoFonteLetra.Margin.Top
+                                       + TextoFonteLetra.Margin.Bottom
+                                     : 0;
+
+                    double offsetMaximo = ScrollLetras.ExtentHeight
+                                        - ScrollLetras.ViewportHeight
+                                        - ItemsLetras.Margin.Bottom
+                                        - alturaFonte;
 
                     if (offsetMaximo <= 0) return;
 
-                    double offsetAlvo = progresso * offsetMaximo;
-                    AnimarScrollSuave(ScrollLetras, offsetAlvo, 200, linear: true);
+                    if (_recriarAncoraScroll) {
+                        _offsetBaseScroll = ScrollLetras.VerticalOffset;
+                        _progressoBaseScroll = progresso;
+                        _recriarAncoraScroll = false;
+                    }
+
+                    double offsetAlvo = _offsetBaseScroll + ( progresso - _progressoBaseScroll ) * offsetMaximo;
+
+                    offsetAlvo = Math.Clamp(offsetAlvo, 0, offsetMaximo);
+                    AnimarScrollSuave(ScrollLetras, offsetAlvo);
                 }
             }
         }
 
-        private void AnimarScrollSuave(ScrollViewer scrollViewer, double offsetAlvo, int duracaoMs = 130, bool linear = false)
+        private void AnimarScrollSuave(ScrollViewer scrollViewer, double offsetAlvo)
         {
-            if (scrollViewer == null) return;
+            _offsetAlvoScroll = Math.Clamp(offsetAlvo, 0, scrollViewer.ScrollableHeight);
 
-            _timerScroll?.Stop();
+            if (_timerScroll == null) {
+                var timer = new DispatcherTimer(DispatcherPriority.Render)
+                {
+                    Interval = TimeSpan.FromMilliseconds(33)
+                };
 
-            double offsetInicial = scrollViewer.VerticalOffset;
-            double diferenca = offsetAlvo - offsetInicial;
-            if (Math.Abs(diferenca) < 1) return;
+                _timerScroll = timer;
 
-            var relogio = System.Diagnostics.Stopwatch.StartNew();
-            var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
-            _timerScroll = timer;
+                timer.Tick += (_, _) =>
+                {
+                    DateTime agora = DateTime.UtcNow;
+                    double deltaTempo = ( agora - _ultimoTickScroll ).TotalSeconds;
+                    _ultimoTickScroll = agora;
 
-            timer.Tick += (s, e) =>
-            {
-                double progresso = Math.Min(1, relogio.ElapsedMilliseconds / (double)duracaoMs);
-                double suavizado = linear ? progresso : 1 - Math.Pow(1 - progresso, 3);
+                    double atual = scrollViewer.VerticalOffset;
+                    double fator = 1 - Math.Exp(-deltaTempo / 0.12);
+                    double proximo = atual + ( _offsetAlvoScroll - atual ) * fator;
 
-                scrollViewer.ScrollToVerticalOffset(offsetInicial + diferenca * suavizado);
+                    if (Math.Abs(_offsetAlvoScroll - proximo) < 0.5) {
+                        scrollViewer.ScrollToVerticalOffset(_offsetAlvoScroll);
+                        timer.Stop();
+                        _timerScroll = null;
+                        return;
+                    }
 
-                if (progresso >= 1) timer.Stop();
-            };
+                    scrollViewer.ScrollToVerticalOffset(proximo);
+                };
+            }
 
-            timer.Start();
+            if (!_timerScroll.IsEnabled) {
+                _ultimoTickScroll = DateTime.UtcNow;
+                _timerScroll.Start();
+            }
         }
 
         private void LinhaLetra_Click(object sender, MouseButtonEventArgs e)
@@ -174,7 +244,7 @@ namespace Project_Kitsune.Views
 
                 string textoInicial = File.Exists(fullPath) ? File.ReadAllText(fullPath) : player.LetraAtual?.ConteudoBruto ?? "";
 
-                var vm = new EditarLetraViewModel(fullPath, textoInicial, biblioteca);
+                var vm = new EditarLetraViewModel(fullPath, textoInicial, player.LetraAtual?.Fonte ?? FonteLetra.Nenhuma, biblioteca);
                 var janela = new EditarLetraWindow(vm) { Owner = Window.GetWindow(this) };
                 if (janela.ShowDialog() == true) _ = player.CarregarLetraAtual();
             }
@@ -302,6 +372,18 @@ namespace Project_Kitsune.Views
                 if (DataContext is ShellViewModel viewModel) {
                     viewModel.Player.TocarMusica(musica);
                 }
+            }
+        }
+
+        private void TextoFonteLetra_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (player.LetraEditada || player.FonteUrl is null) return;
+
+            try {
+                Process.Start(new ProcessStartInfo(player.FonteUrl) { UseShellExecute = true });
+            }
+            catch (Exception ex) {
+                Debug.WriteLine($"ERRO ao abrir link da letra: {ex.Message}");
             }
         }
     }

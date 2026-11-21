@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="Project_Kitsune.Views.ShellPages.SearchPages.SearchPlaylistPage"
+﻿<UserControl x:Class="KyoneMusic.Views.ShellPages.SearchPages.SearchPlaylistPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -6,7 +6,7 @@
              xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
              xmlns:system="clr-namespace:System;assembly=System.Runtime"
              xmlns:hc="https://handyorg.github.io/handycontrol"
-             xmlns:local="clr-namespace:Project_Kitsune.Views.ShellPages.SearchPages"
+             xmlns:local="clr-namespace:KyoneMusic.Views.ShellPages.SearchPages"
              xmlns:vwp="clr-namespace:WpfToolkit.Controls;assembly=VirtualizingWrapPanel"
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800">
@@ -34,12 +34,12 @@
                                 Background="{DynamicResource SurfaceRaisedBrush}"
                                 Style="{StaticResource BorderClip}">
                             <Grid>
-                                <Image Source="{Binding Capa, Converter={StaticResource BytesParaImagemConverter}, ConverterParameter=240}"
+                                <Image Source="{Binding Capa, Converter={StaticResource BytesParaImagemConverter}, ConverterParameter=200}"
                                        Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                <iconPacks:PackIconBoxIcons Kind="RegularListMusic" Width="32" Height="32"
-                                                            Foreground="{DynamicResource TextMutedBrush}"
-                                                            HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                            Visibility="{Binding Capa, Converter={StaticResource NullToVisibilityConverter}}" />
+                                <iconPacks:PackIconPhosphorIcons Kind="PlaylistBold" Width="32" Height="32"
+                                                                 Foreground="{DynamicResource TextMutedBrush}"
+                                                                 HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                 Visibility="{Binding Capa, Converter={StaticResource NullToVisibilityConverter}}" />
                             </Grid>
                         </Border>
 
@@ -47,13 +47,13 @@
                             <Border Background="#00000090" CornerRadius="10" Padding="8,2" Margin="6"
                                     HorizontalAlignment="Right" VerticalAlignment="Top">
                                 <TextBlock Text="{Binding Playlist.NumMusicas, StringFormat={}{0:D2}}"
-                                           FontFamily="{StaticResource FonteInter}" FontSize="12" FontWeight="Bold"
+                                           FontSize="12" FontWeight="Bold"
                                            Foreground="{DynamicResource TextMutedBrush}" />
                             </Border>
 
                             <StackPanel>
                                 <TextBlock FontSize="16" FontWeight="DemiBold"
-                                           FontFamily="{StaticResource FonteInter}"
+
                                            Foreground="{DynamicResource TextPrimaryBrush}"
                                            TextTrimming="CharacterEllipsis" Margin="0,8,0,4">
                                     <TextBlock.Style>
@@ -72,8 +72,8 @@
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <StackPanel Orientation="Horizontal" Margin="0,4">
-                                                <iconPacks:PackIconBoxIcons Kind="RegularMusicAlt" Width="12" Height="12"
-                                                                            Foreground="{DynamicResource TextMutedBrush}" />
+                                                <iconPacks:PackIconPhosphorIcons Kind="MusicNoteFill" Width="12" Height="12"
+                                                                                 Foreground="{DynamicResource TextMutedBrush}" />
                                                 <TextBlock Margin="8,0" Text="{Binding}" FontSize="12"
                                                            TextTrimming="CharacterEllipsis"
                                                            Foreground="{DynamicResource TextMutedBrush}" />
@@ -103,14 +103,10 @@
                         hc:BorderElement.CornerRadius="50"
                         Foreground="{DynamicResource TextSecondaryBrush}"
                         Margin="16,0,0,0" VerticalAlignment="Center">
-                    <iconPacks:PackIconBoxIcons Kind="SolidUndo" />
+                    <iconPacks:PackIconPhosphorIcons Kind="ArrowUUpLeftBold" Width="18" Height="18" />
                 </Button>
                 <TextBlock Text="{Binding Titulo}" TextTrimming="CharacterEllipsis"
-                           Style="{StaticResource ConfigSectionTitle}" Margin="20,0,0,0"
-                           FontSize="24" FontWeight="Bold"
-                           FontFamily="{StaticResource FonteHiragino}"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           VerticalAlignment="Center" />
+                           Style="{StaticResource TitleMain}"/>
             </StackPanel>
         </Grid>
         <ItemsControl Grid.Row="1" ItemsSource="{Binding ResultadosPlaylists}"

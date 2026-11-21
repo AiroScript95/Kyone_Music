@@ -2,7 +2,7 @@
 using System.Windows;
 using System.Windows.Data;
 
-namespace Project_Kitsune.Converters
+namespace KyoneMusic.Converters
 {
     public class ProgressoParaLarguraConverter : IMultiValueConverter
     {
@@ -10,7 +10,6 @@ namespace Project_Kitsune.Converters
         {
             if (values == null || values.Length < 3) return 0.0;
 
-            // proteger UnsetValue
             if (values[0] == DependencyProperty.UnsetValue ||
                 values[1] == DependencyProperty.UnsetValue ||
                 values[2] == DependencyProperty.UnsetValue)
@@ -32,14 +31,12 @@ namespace Project_Kitsune.Converters
         public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
             => throw new NotImplementedException();
 
-        // Mínimo e seguro: trata UnsetValue, null e tipos numéricos comuns
         private static double SafeToDouble(object o)
         {
             if (o == null) return 0.0;
             if (o == DependencyProperty.UnsetValue) return 0.0;
 
-            try
-            {
+            try {
                 if (o is double d) return d;
                 if (o is float f) return (double)f;
                 if (o is int i) return i;
@@ -51,13 +48,11 @@ namespace Project_Kitsune.Converters
                 if (o is IConvertible conv)
                     return conv.ToDouble(CultureInfo.InvariantCulture);
 
-                // evitar ambiguidade com o método Convert da classe; qualificar System.Convert
                 var str = System.Convert.ToString(o, CultureInfo.InvariantCulture);
                 if (double.TryParse(str, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsed))
                     return parsed;
             }
-            catch
-            {
+            catch {
             }
 
             return 0.0;

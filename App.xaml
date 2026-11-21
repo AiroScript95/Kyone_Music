@@ -1,13 +1,21 @@
-﻿<Application x:Class="Project_Kitsune.App"
+﻿<Application x:Class="KyoneMusic.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:converters="clr-namespace:Project_Kitsune.Converters">
+             xmlns:converters="clr-namespace:KyoneMusic.Converters">
     <Application.Resources>
         <ResourceDictionary>
             <!-- Fontes e Recursos Globais DEPOIS dos MergedDictionaries -->
-            <FontFamily x:Key="FonteHiragino">pack://application:,,,/Resources/Fonts/#Hiragino Kaku Gothic Pro W6</FontFamily>
-            <FontFamily x:Key="FonteInter">pack://application:,,,/Resources/Fonts/#Inter 18pt</FontFamily>
-            <FontFamily x:Key="FonteJetBrains">pack://application:,,,/Resources/Fonts/#JetBrains Mono</FontFamily>
+            <!-- Zen Kaku Gothic New -->
+            <FontFamily x:Key="FonteZenNew">pack://application:,,,/Resources/Fonts/#Zen Kaku Gothic New</FontFamily>
+            <FontFamily x:Key="FonteZenNewLight">pack://application:,,,/Resources/Fonts/#Zen Kaku Gothic New Light</FontFamily>
+            <FontFamily x:Key="FonteZenNewMedium">pack://application:,,,/Resources/Fonts/#Zen Kaku Gothic New Medium</FontFamily>
+            <FontFamily x:Key="FonteZenNewBlack">pack://application:,,,/Resources/Fonts/#Zen Kaku Gothic New Black</FontFamily>
+
+            <FontFamily x:Key="FonteUI">/Resources/Fonts/#Figtree, /Resources/Fonts/#Zen Kaku Gothic New, Segoe UI</FontFamily>
+            <FontFamily x:Key="FonteUILight">/Resources/Fonts/#Figtree Light, /Resources/Fonts/#Zen Kaku Gothic New Light, Segoe UI</FontFamily>
+            <FontFamily x:Key="FonteUIMedium">/Resources/Fonts/#Figtree Medium, /Resources/Fonts/#Zen Kaku Gothic New Medium, Segoe UI</FontFamily>
+            <FontFamily x:Key="FonteUISemiBold">/Resources/Fonts/#Figtree SemiBold, /Resources/Fonts/#Zen Kaku Gothic New, Segoe UI</FontFamily>
+            <FontFamily x:Key="FonteUIBlack">/Resources/Fonts/#Figtree Black, /Resources/Fonts/#Zen Kaku Gothic New Black, Segoe UI</FontFamily>
 
             <converters:MusicaAtualConverter x:Key="MusicaAtualConverter" />
             <converters:BytesParaImagemConverter x:Key="BytesParaImagemConverter" />
@@ -29,18 +37,18 @@
                 <ResourceDictionary Source="pack://application:,,,/HandyControl;component/Themes/Theme.xaml" />
 
                 <!-- Tema Local -->
-                <ResourceDictionary Source="/Resources/Themes/Colors.Asa.xaml" />
+                <ResourceDictionary Source="/Resources/Themes/Colors_Asa.xaml" />
 
                 <!--Styles-->
-                <ResourceDictionary Source="/Resources/Utils/HoverListbox.xaml" />
-                <ResourceDictionary Source="/Resources/Utils/PrettyScrollBar.xaml" />
-                <ResourceDictionary Source="/Resources/Utils/PrettySlider.xaml" />
-                <ResourceDictionary Source="/Resources/Utils/PrettySliderEqualizer.xaml" />
-                <ResourceDictionary Source="/Resources/Utils/Styles.xaml" />
-                <ResourceDictionary Source="/Resources/Utils/ContextMenus.xaml" />
+                <ResourceDictionary Source="/Resources/Components/HoverListbox.xaml" />
+                <ResourceDictionary Source="/Resources/Components/PrettyScrollBar.xaml" />
+                <ResourceDictionary Source="/Resources/Components/PrettySlider.xaml" />
+                <ResourceDictionary Source="/Resources/Components/PrettySliderEqualizer.xaml" />
+                <ResourceDictionary Source="/Resources/Components/Styles.xaml" />
+                <ResourceDictionary Source="/Resources/Components/ContextMenus.xaml" />
 
                 <!-- Idioma -->
-                <ResourceDictionary Source="/Resources/Languages/Strings.en.xaml" />
+                <ResourceDictionary Source="/Resources/Languages/Strings.pt.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

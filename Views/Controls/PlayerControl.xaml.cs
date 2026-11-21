@@ -1,11 +1,11 @@
-﻿using Project_Kitsune.ViewModels;
+﻿using KyoneMusic.ViewModels;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace Project_Kitsune.Views.Controls
+namespace KyoneMusic.Views.Controls
 {
     /// <summary>
     /// Interação lógica para PlayerControl.xam

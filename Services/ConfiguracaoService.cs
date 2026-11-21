@@ -1,12 +1,13 @@
-﻿using Project_Kitsune.Models;
+﻿using KyoneMusic.Models;
 using System.IO;
 using System.Text.Json;
 using System.Diagnostics;
 
-namespace Project_Kitsune.Services
+namespace KyoneMusic.Services
 {
     public class ConfiguracaoService
     {
+        private readonly object _configuracaoLock = new();
         private static string caminhoData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         private static string caminhoPasta = Path.Combine(caminhoData, "Kitsune");
         private static string caminhoPastaConfig = Path.Combine(caminhoPasta, "Settings");
@@ -25,31 +26,43 @@ namespace Project_Kitsune.Services
                 return JsonSerializer.Deserialize<Configuracao>(TextJson) ?? new Configuracao();
             }
             catch (JsonException) {
-                // Ficheiro corrompido de uma tentativa anterior — cai para config nova em vez de crashar
                 Configuracao novaConfig = new Configuracao();
                 novaConfig.RotaMusica.Add(Environment.GetFolderPath(Environment.SpecialFolder.MyMusic));
                 return novaConfig;
             }
         }
 
+        public void AtualizarConfiguracao(Action<Configuracao> alteracao)
+        {
+            ArgumentNullException.ThrowIfNull(alteracao);
+
+            lock (_configuracaoLock) {
+                Configuracao configuracao = CarregarConfiguracao();
+                alteracao(configuracao);
+                GuardarConfiguracao(configuracao);
+            }
+        }
+
         public void GuardarConfiguracao(Configuracao config)
         {
-            try {
-                string TextJson = JsonSerializer.Serialize(config);
-                Directory.CreateDirectory(caminhoPastaConfig);
+            ArgumentNullException.ThrowIfNull(config);
 
-                string caminhoTemp = caminhoArquivo + ".tmp";
-                File.WriteAllText(caminhoTemp, TextJson);
+            lock (_configuracaoLock) {
+                try {
+                    string textJson = JsonSerializer.Serialize(config);
+                    Directory.CreateDirectory(caminhoPastaConfig);
 
-                if (File.Exists(caminhoArquivo)) {
-                    File.Replace(caminhoTemp, caminhoArquivo, null);
+                    string caminhoTemp = caminhoArquivo + ".tmp";
+                    File.WriteAllText(caminhoTemp, textJson);
+
+                    if (File.Exists(caminhoArquivo))
+                        File.Replace(caminhoTemp, caminhoArquivo, null);
+                    else
+                        File.Move(caminhoTemp, caminhoArquivo);
                 }
-                else {
-                    File.Move(caminhoTemp, caminhoArquivo);
+                catch (Exception ex) {
+                    Debug.WriteLine($"Erro ao guardar configuração: {ex}");
                 }
-            }
-            catch (Exception ex) {
-                Debug.WriteLine(ex.Message);
             }
         }
 
@@ -66,7 +79,6 @@ namespace Project_Kitsune.Services
                 string caminhoPastaAssets = Path.Combine(caminhoPasta, "Assets");
                 Directory.CreateDirectory(caminhoPastaAssets);
 
-                // Apaga qualquer "background.*" antigo, independente da extensão
                 foreach (string arquivoAntigo in Directory.EnumerateFiles(caminhoPastaAssets, "background.*")) {
                     File.Delete(arquivoAntigo);
                 }
@@ -74,10 +86,10 @@ namespace Project_Kitsune.Services
                 string caminhoDestino = Path.Combine(caminhoPastaAssets, "background" + extensao);
                 File.Copy(caminho, caminhoDestino, overwrite: true);
 
-                // Atualiza e guarda a configuração
-                Configuracao config = CarregarConfiguracao();
-                config.Background = caminhoDestino;
-                GuardarConfiguracao(config);
+                AtualizarConfiguracao(config =>
+                {
+                    config.Background = caminhoDestino;
+                });
             }
             catch (Exception ex) {
                 Debug.WriteLine($"ERRO: {ex.Message}");
@@ -92,9 +104,10 @@ namespace Project_Kitsune.Services
                 if (!string.IsNullOrWhiteSpace(config.Background) && File.Exists(config.Background)) {
                     File.Delete(config.Background);
                 }
-
-                config.Background = string.Empty;
-                GuardarConfiguracao(config);
+                AtualizarConfiguracao(config =>
+                {
+                    config.Background = string.Empty;
+                });
             }
             catch (Exception ex) {
                 Debug.WriteLine($"ERRO: {ex.Message}");
@@ -111,30 +124,35 @@ namespace Project_Kitsune.Services
 
             if (!Directory.Exists(caminho)) return false;
 
-            config.RotaMusica.Add(caminho);
-            GuardarConfiguracao(config);
+            AtualizarConfiguracao(config =>
+            {
+                config.RotaMusica.Add(caminho);
+            });
             return true;
         }
 
         public void RemoverPastaMusica(string caminho)
         {
-            Configuracao config = CarregarConfiguracao();
-            config.RotaMusica.Remove(caminho);
-            GuardarConfiguracao(config);
+            AtualizarConfiguracao(config =>
+            {
+                config.RotaMusica.Remove(caminho);
+            });
         }
 
         public void AtualizarTema(string nomeTema)
         {
-            Configuracao config = CarregarConfiguracao();
-            config.Theme = nomeTema;
-            GuardarConfiguracao(config);
+            AtualizarConfiguracao(config =>
+            {
+                config.Theme = nomeTema;
+            });
         }
 
         public void AtualizarIdiona(string nomeIdiona)
         {
-            Configuracao config = CarregarConfiguracao();
-            config.Idioma = nomeIdiona;
-            GuardarConfiguracao(config);
+            AtualizarConfiguracao(config =>
+            {
+                config.Idioma = nomeIdiona;
+            });
         }
     }
 }

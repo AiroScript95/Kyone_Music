@@ -1,4 +1,4 @@
-﻿namespace Project_Kitsune.Models
+﻿namespace KyoneMusic.Models
 {
     public class UltimaMusicaInfo
     {
@@ -31,5 +31,8 @@
         public UltimaMusicaInfo? UltimaMusica { get; set; }
         public bool OrdemDescendente { get; set; } = false;
         public bool ScrollAutomatico { get; set; } = false;
+        public bool MostarImage { get; set; } = false;
+        public string DispositivoNome { get; set; } = string.Empty;
+        public string DispositivoDriver { get; set; } = string.Empty;
     }
 }

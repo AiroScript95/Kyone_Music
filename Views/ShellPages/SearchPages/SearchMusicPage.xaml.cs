@@ -13,11 +13,11 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Microsoft.Extensions.DependencyInjection;
-using Project_Kitsune.Models;
-using Project_Kitsune.ViewModels;
-using Project_Kitsune.ViewModels.ShellPages.SearchPages;
+using KyoneMusic.Models;
+using KyoneMusic.ViewModels;
+using KyoneMusic.ViewModels.ShellPages.SearchPages;
 
-namespace Project_Kitsune.Views.ShellPages.SearchPages
+namespace KyoneMusic.Views.ShellPages.SearchPages
 {
     /// <summary>
     /// Interação lógica para SearchMusicPage.xam
@@ -52,7 +52,7 @@ namespace Project_Kitsune.Views.ShellPages.SearchPages
                 playerViewModel.CarregarPlaylistsDisponiveis();
             }
             catch (Exception ex) {
-                MessageBox.Show(ex.ToString());
+                MessageBox.Show(ex.Message);
             }
         }
     }

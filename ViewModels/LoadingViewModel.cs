@@ -1,11 +1,11 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Project_Kitsune.Models;
-using Project_Kitsune.Services;
+using KyoneMusic.Models;
+using KyoneMusic.Services;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
 
-namespace Project_Kitsune.ViewModels
+namespace KyoneMusic.ViewModels
 {
     public class LoadingViewModel : INotifyPropertyChanged
     {
@@ -24,11 +24,10 @@ namespace Project_Kitsune.ViewModels
             Configuracao configAtual = configService.CarregarConfiguracao();
             string idiomaInicial = string.IsNullOrEmpty(configAtual.Idioma) ?
              App.DetectarIdiomaSistema() : configAtual.Idioma;
-            ((App)Application.Current).AplicarIdioma(idiomaInicial);
+            ( (App)Application.Current ).AplicarIdioma(idiomaInicial);
 
-            if (!string.IsNullOrEmpty(configAtual.Theme))
-            {
-                ((App)Application.Current).AplicarTema(configAtual.Theme);
+            if (!string.IsNullOrEmpty(configAtual.Theme)) {
+                ( (App)Application.Current ).AplicarTema(configAtual.Theme);
             }
             ShellViewModel.AplicarMascote(configAtual.Theme);
             _ = Carregar();
@@ -45,7 +44,7 @@ namespace Project_Kitsune.ViewModels
             });
             Configuracao configAtual = configService.CarregarConfiguracao();
             configService.GuardarConfiguracao(configAtual);
-            await Task.Delay(1000);
+            await Task.Delay(500);
             Terminado?.Invoke();
         }
 

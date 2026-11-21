@@ -1,14 +1,16 @@
 ﻿using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
-using Project_Kitsune.Models;
-using Project_Kitsune.Services;
+using KyoneMusic.Helpers;
+using KyoneMusic.Models;
+using KyoneMusic.Services;
+using KyoneMusic.Views;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.IO;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Windows;
 
-namespace Project_Kitsune.ViewModels.ShellPages
+namespace KyoneMusic.ViewModels.ShellPages
 {
     public partial class PlaylistsPageViewModel : INotifyPropertyChanged
     {
@@ -19,35 +21,7 @@ namespace Project_Kitsune.ViewModels.ShellPages
         protected DatabaseService _database;
         protected ShellViewModel _shell;
         private Dictionary<string, Music> _porCaminho;
-        private bool _mostrarModalCriarPlaylist;
-
-        public bool MostrarModalCriarPlaylist {
-            get => _mostrarModalCriarPlaylist;
-            set {
-                _mostrarModalCriarPlaylist = value;
-                OnPropertyChanged();
-            }
-        }
-
-        private string _novaPlaylist = string.Empty;
-
-        public string NovaPlaylist {
-            get => _novaPlaylist;
-            set {
-                _novaPlaylist = value;
-                OnPropertyChanged();
-            }
-        }
-
-        private bool mostrarConfirmacaoExclusao;
-
-        public bool MostrarConfirmacaoExclusao {
-            get => mostrarConfirmacaoExclusao;
-            set {
-                mostrarConfirmacaoExclusao = value;
-                OnPropertyChanged();
-            }
-        }
+        private const int maxItem = 2;
 
         public PlaylistsPageViewModel(ShellViewModel shell)
         {
@@ -73,21 +47,23 @@ namespace Project_Kitsune.ViewModels.ShellPages
                 : _database.ListarMusicasDaPlaylist(playlist.Id);
 
             List<Music> existentes = todosCaminhos.Select(c => porCaminho.TryGetValue(c, out Music? m) ? m : null).OfType<Music>().ToList();
+            Debug.WriteLine($"{playlist.Ordem},{playlist.Direcao}");
+            List<Music> lista = _ordenacaoService.OrdenarPlaylist(existentes, playlist.Ordem, playlist.Direcao);
 
-            byte[]? capa = existentes.FirstOrDefault()?.Image;
+            byte[]? capa = lista.FirstOrDefault()?.Image;
             bool menuOpen = true;
 
-            List<string> listaMusicas = existentes.Take(3).Select(m => m.Titulo).ToList();
+            List<string> listaMusicas = lista.Take(maxItem).Select(m => m.Titulo).ToList();
 
             if (playlist.Name == "Favoritos") {
-                playlist.NumMusicas = existentes.Count;
                 menuOpen = false;
             }
+            playlist.NumMusicas = TextoHelper.Texto("Str_NumMusicas", $"{lista.Count}");
 
             return new PlaylistComCapa(playlist, capa, listaMusicas, menuOpen);
         }
 
-        private PlaylistComCapa PlaylistLetras()
+        public PlaylistComCapa PlaylistLetras()
         {
             var musicasComLetra = _ordenacaoService.Ordenar(_biblioteca.Musicas.Where(m => BibliotecaService.TemLrcComConteudo(m.Caminho)).ToList(), "Alfabetica", false);
 
@@ -96,58 +72,21 @@ namespace Project_Kitsune.ViewModels.ShellPages
                 Id = Playlist.IdComLetra,
                 Name = (string)Application.Current.FindResource("Str_ComLetra"),
                 DataCriacao = DateTime.MinValue,
-                Ordem = "Manual",
+                Ordem = "Alfabetica",
                 Musics = musicasComLetra,
-                NumMusicas = musicasComLetra.Count
+                NumMusicas = TextoHelper.Texto("Str_NumMusicas", $" {musicasComLetra.Count}")
             };
 
             byte[]? capa = musicasComLetra.FirstOrDefault()?.Image;
-            List<string> titulos = musicasComLetra.Take(3).Select(m => m.Titulo).ToList();
+            List<string> listaMusicas = musicasComLetra.Take(maxItem).Select(m => m.Titulo).ToList();
 
-            return new PlaylistComCapa(comLetra, capa, titulos, false);
+            return new PlaylistComCapa(comLetra, capa, listaMusicas, false);
         }
 
         [RelayCommand]
         private void MostrarModal()
         {
-            MostrarModalCriarPlaylist = true;
-        }
-
-        [RelayCommand]
-        private void CriarPlaylist()
-        {
-            if (string.IsNullOrWhiteSpace(NovaPlaylist)) return;
-
-            _database.CriarPlaylist(NovaPlaylist);
-
-            List<Playlist> atualizadas = _database.ListarPlaylists();
-            Playlists.Clear();
-            _porCaminho = _biblioteca.Musicas.ToDictionary(m => m.Caminho, StringComparer.OrdinalIgnoreCase);
-            Playlists.Add(PlaylistLetras());
-            foreach (Playlist p in atualizadas) {
-                Playlists.Add(CarregarComCapa(p, _porCaminho));
-            }
-
-            NovaPlaylist = string.Empty;
-            MostrarModalCriarPlaylist = false;
-        }
-
-        [RelayCommand]
-        private void FecharModal()
-        {
-            NovaPlaylist = string.Empty;
-            MostrarModalCriarPlaylist = false;
-        }
-
-        [RelayCommand]
-        private void RemoverPlaylist(Playlist playlist)
-        {
-            // Impede apagar a playlist de sistema
-            if (playlist.Name == "Favoritos") return;
-
-            _database.RemoverPlaylist(playlist.Id);
-            PlaylistComCapa? item = Playlists.FirstOrDefault(p => p.Playlist.Id == playlist.Id);
-            if (item != null) Playlists.Remove(item);
+            _shell.MostrarModalCriarPlaylist = true;
         }
 
         [RelayCommand]
@@ -155,32 +94,27 @@ namespace Project_Kitsune.ViewModels.ShellPages
         {
             PlaylistDetailPageViewModel detalhe = new(_shell, () => new PlaylistsPageViewModel(_shell));
             detalhe.Carregar(playlist);
+            if (playlist.Name == "Favoritos") _shell.Page = "Favoritos";
             _shell.CurrentPage = detalhe;
         }
-
-        private Playlist? _playlistParaExcluir;
 
         [RelayCommand]
         private void PedirExclusao(Playlist playlist)
         {
-            _playlistParaExcluir = playlist;
-            MostrarConfirmacaoExclusao = true;
+            _shell.Playlist = playlist;
+            _shell.PlayListParaExcluir = TextoHelper.Texto("Str_ConfirmarEliminarPlaylist", playlist.Name);
+            _shell.MostrarConfirmacaoExclusaoPlaylist = true;
         }
 
         [RelayCommand]
-        private void ConfirmarExclusao()
+        private void EditarPlaylist(Playlist playlist)
         {
-            if (_playlistParaExcluir != null)
-                RemoverPlaylist(_playlistParaExcluir);
-            MostrarConfirmacaoExclusao = false;
-            _playlistParaExcluir = null;
-        }
-
-        [RelayCommand]
-        private void CancelarExclusao()
-        {
-            MostrarConfirmacaoExclusao = false;
-            _playlistParaExcluir = null;
+            var window = new EditarPlaylistWindow(playlist, _biblioteca)
+            {
+                Owner = Application.Current.MainWindow
+            }
+            ;
+            window.ShowDialog();
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Project_Kitsune.Helpers;
-using Project_Kitsune.Services;
-using Project_Kitsune.ViewModels;
+using KyoneMusic.Helpers;
+using KyoneMusic.Services;
+using KyoneMusic.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -18,7 +18,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
-namespace Project_Kitsune.Views
+namespace KyoneMusic.Views
 {
     /// <summary>
     /// Lógica interna para EditarLetraWindow.xaml
@@ -37,6 +37,8 @@ namespace Project_Kitsune.Views
             ( (App)Application.Current ).TemaAlterado += AtualizarCorTitle;
             vm.FechadoComSucesso += () => { DialogResult = true; Close(); };
             DataContext = vm;
+
+            StateChanged += (s, e) => AtualizarIconeMaximizar();
         }
 
         protected override void OnSourceInitialized(EventArgs e)
@@ -46,6 +48,16 @@ namespace Project_Kitsune.Views
             AtualizarCorBordaNativa();
             AtualizarCorTitle();
             CustomTitleBar.Apply(this, MinimizeButton, MaximizeButton, CloseButton);
+        }
+
+        private void AtualizarIconeMaximizar()
+        {
+            if (WindowState == WindowState.Maximized) {
+                MaximizeButton.Content = "\uE923"; // Duas janelas sobrepostas (Restaurar)
+            }
+            else {
+                MaximizeButton.Content = "\uE922"; // Quadrado único (Maximizar)
+            }
         }
 
         private void Minimize_Click(object sender, RoutedEventArgs e) => SystemCommands.MinimizeWindow(this);

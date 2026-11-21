@@ -1,22 +1,20 @@
 ﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace Project_Kitsune.Models
+namespace KyoneMusic.Models
 {
     public class BandaEqualizador : INotifyPropertyChanged
     {
         public event Action<uint, float>? OnGanhoAlterado;
 
         public uint Indice { get; set; }
-        public float Frequencia { get; set; } // só para mostrar label, ex: "60 Hz"
+        public float Frequencia { get; set; }
 
         private float _ganho;
 
-        public float Ganho
-        {
+        public float Ganho {
             get => _ganho;
-            set
-            {
+            set {
                 _ganho = value;
                 OnPropertyChanged();
                 OnGanhoAlterado?.Invoke(Indice, value);

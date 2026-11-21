@@ -1,6 +1,5 @@
-﻿namespace Project_Kitsune.Models
+﻿namespace KyoneMusic.Models
 {
-    // Molde cru para desserializar o JSON externo
     public class EqPresetsFile
     {
         public int BandCount { get; set; }
@@ -14,10 +13,9 @@
         public string Name { get; set; } = "";
         public string Category { get; set; } = "";
         public string Description { get; set; } = "";
-        public List<double> ValuesDb { get; set; } = new();
+        public List<double>? ValuesDb { get; set; } = new();
     }
 
-    // Modelo usado pelo resto da app
     public class PresetEqualizador
     {
         public uint Indice { get; set; }

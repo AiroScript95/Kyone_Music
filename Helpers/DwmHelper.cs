@@ -3,7 +3,7 @@ using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
 
-namespace Project_Kitsune.Helpers
+namespace KyoneMusic.Helpers
 {
     public static class DwmHelper
     {
@@ -52,7 +52,7 @@ namespace Project_Kitsune.Helpers
         {
             if (!SuportaDwmModerno) return;
             var hwnd = new WindowInteropHelper(window).Handle;
-            uint colorRef = (uint)(cor.R | (cor.G << 8) | (cor.B << 16));
+            uint colorRef = (uint)( cor.R | ( cor.G << 8 ) | ( cor.B << 16 ) );
             _ = DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, ref colorRef, sizeof(uint));
         }
 
@@ -60,22 +60,8 @@ namespace Project_Kitsune.Helpers
         {
             if (!SuportaDwmModerno) return;
             var hwnd = new WindowInteropHelper(window).Handle;
-            int colorRef = cor.R | (cor.G << 8) | (cor.B << 16); // formato COLORREF (BGR)
+            int colorRef = cor.R | ( cor.G << 8 ) | ( cor.B << 16 );
             _ = DwmSetWindowAttribute(hwnd, DWMWA_CAPTION_COLOR, ref colorRef, sizeof(int));
-        }
-
-        public static void OcultarIcon(Window window)
-        {
-            var hwnd = new WindowInteropHelper(window).Handle;
-
-            // Remove o ícone da barra de título
-            int exStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
-            SetWindowLong(hwnd, GWL_EXSTYLE, exStyle | WS_EX_DLGMODALFRAME);
-
-            SendMessage(hwnd, WM_SETICON, new IntPtr(1), IntPtr.Zero); // ICON_BIG
-            SendMessage(hwnd, WM_SETICON, IntPtr.Zero, IntPtr.Zero);   // ICON_SMALL
-
-            SetWindowPos(hwnd, IntPtr.Zero, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED);
         }
     }
 }

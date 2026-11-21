@@ -1,13 +1,13 @@
 ﻿using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Win32;
-using Project_Kitsune.Models;
-using Project_Kitsune.Services;
+using KyoneMusic.Models;
+using KyoneMusic.Services;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
 
-namespace Project_Kitsune.ViewModels.ShellPages
+namespace KyoneMusic.ViewModels.ShellPages
 {
     public partial class ConfigThemePageViewModel : INotifyPropertyChanged
     {
@@ -15,11 +15,9 @@ namespace Project_Kitsune.ViewModels.ShellPages
         private readonly Func<object> _voltarPara;
         private bool _temImage;
 
-        public bool TemImage
-        {
+        public bool TemImage {
             get => _temImage;
-            set
-            {
+            set {
                 _temImage = value;
                 OnPropertyChanged();
             }
@@ -27,28 +25,33 @@ namespace Project_Kitsune.ViewModels.ShellPages
 
         private string _caminhoBackground = string.Empty;
 
-        public string ImagemBackground
-        {
+        public string ImagemBackground {
             get => _caminhoBackground;
-            set
-            {
+            set {
                 _caminhoBackground = value;
                 OnPropertyChanged();
             }
         }
 
-        public string Border
-        {
+        public string Border {
             get => _shell.Border;
             set { _shell.Border = value; OnPropertyChanged(); }
         }
 
-        public string FormatoLista
-        {
+        public string FormatoLista {
             get => _shell.FormatoLista;
-            set
-            {
+            set {
                 _shell.FormatoLista = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public bool _mostrarImage = false;
+
+        public bool MostrarImage {
+            get => _mostrarImage;
+            set {
+                _mostrarImage = value;
                 OnPropertyChanged();
             }
         }
@@ -56,18 +59,15 @@ namespace Project_Kitsune.ViewModels.ShellPages
         protected ConfiguracaoService configuracaoService;
         private string _temaSelecionado = string.Empty;
 
-        public string TemaSelecionado
-        {
+        public string TemaSelecionado {
             get => _temaSelecionado;
-            set
-            {
+            set {
                 _temaSelecionado = value;
                 OnPropertyChanged();
 
-                if (!string.IsNullOrEmpty(value))
-                {
+                if (!string.IsNullOrEmpty(value)) {
                     configuracaoService.AtualizarTema(value);
-                    ((App)Application.Current).AplicarTema(value);
+                    ( (App)Application.Current ).AplicarTema(value);
                     _shell.AplicarMascote(value);
                 }
             }
@@ -80,7 +80,7 @@ namespace Project_Kitsune.ViewModels.ShellPages
             Configuracao config = configuracaoService.CarregarConfiguracao();
             _temaSelecionado = string.IsNullOrEmpty(config.Theme) ? "Asa" : config.Theme;
             ImagemBackground = config.Background;
-            //Border = config.BorderColor;
+            MostrarImage = config.MostarImage;
             TemImage = !string.IsNullOrEmpty(config.Background);
             _voltarPara = voltarPara;
         }
@@ -111,8 +111,7 @@ namespace Project_Kitsune.ViewModels.ShellPages
                 Filter = "Imagens|*.png;*.jpg;*.jpeg;"
             };
             bool? resultado = dialog.ShowDialog();
-            if (resultado == true)
-            {
+            if (resultado == true) {
                 string caminho = dialog.FileName;
                 configuracaoService.GuardarBackground(caminho);
                 Configuracao configuracao = configuracaoService.CarregarConfiguracao();
@@ -126,10 +125,20 @@ namespace Project_Kitsune.ViewModels.ShellPages
         private void RemoverBackground()
         {
             configuracaoService.RemoverBackground();
-
             _shell.CaminhoBackground = string.Empty;
             ImagemBackground = string.Empty;
             TemImage = false;
+        }
+
+        [RelayCommand]
+        private void MostrarBackground()
+        {
+            Configuracao configuracao = configuracaoService.CarregarConfiguracao();
+            if (string.IsNullOrEmpty(configuracao.Background)) return;
+            configuracao.MostarImage = !MostrarImage;
+            _shell.MostrarImage = !MostrarImage;
+            MostrarImage = !MostrarImage;
+            configuracaoService.GuardarConfiguracao(configuracao);
         }
 
         [RelayCommand]

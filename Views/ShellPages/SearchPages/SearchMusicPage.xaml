@@ -1,11 +1,11 @@
-﻿<UserControl x:Class="Project_Kitsune.Views.ShellPages.SearchPages.SearchMusicPage"
+﻿<UserControl x:Class="KyoneMusic.Views.ShellPages.SearchPages.SearchMusicPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
              xmlns:system="clr-namespace:System;assembly=System.Runtime"
-             xmlns:local="clr-namespace:Project_Kitsune.Views.ShellPages"
+             xmlns:local="clr-namespace:KyoneMusic.Views.ShellPages"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:vwp="clr-namespace:WpfToolkit.Controls;assembly=VirtualizingWrapPanel"
              mc:Ignorable="d"
@@ -19,7 +19,7 @@
                     ContextMenu="{StaticResource MusicaContextMenu}"
                     Tag="{Binding DataContext.PlayerViewModel, RelativeSource={RelativeSource AncestorType=UserControl}}">
                 <Grid>
-                    <Grid Opacity="0.65">
+                    <Grid Opacity="1">
                         <Grid.Style>
                             <Style TargetType="Grid">
                                 <Setter Property="Background" Value="Transparent" />
@@ -32,7 +32,7 @@
                                                          RelativeSource="{RelativeSource AncestorType=UserControl}" />
                                             </MultiBinding>
                                         </DataTrigger.Binding>
-                                        <Setter Property="Background" Value="{DynamicResource GradientBackground}" />
+                                        <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -41,29 +41,70 @@
                     <Grid Margin="8,6">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="100*" />
+                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-
-                        <Border Width="60" Height="60" CornerRadius="8" ClipToBounds="True"
+                        <TextBlock Grid.Column="0"
+                                   FontSize="14"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" Margin="8,0,16,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding DataContext.OrdemAtual,
+                                                     RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
+                                                     Value="MaisTocada">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                            <TextBlock.Text>
+                                <MultiBinding Converter="{StaticResource IndiceParaNumeroConverter}">
+                                    <Binding />
+                                    <Binding Path="DataContext.Musicas" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                        <Border Grid.Column="1"
+                                Width="60"
+                                Height="60"
+                                CornerRadius="8"
                                 Background="{DynamicResource SurfaceRaisedBrush}"
-                                Style="{StaticResource BorderClip}">
-                            <Grid>
-                                <Image Source="{Binding Image, Converter={StaticResource BytesParaImagemConverter}, ConverterParameter=120}"
-                                       Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                <iconPacks:PackIconBoxIcons Kind="RegularMusic" Width="18" Height="18"
-                                                            Foreground="{DynamicResource TextMutedBrush}"
-                                                            HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                            Visibility="{Binding Image, Converter={StaticResource NullToVisibilityConverter}}" />
+                                Style="{StaticResource BorderClip}"
+                                ClipToBounds="True">
+                            <Grid ClipToBounds="True">
+                                <Image Source="{Binding Image, Converter={StaticResource BytesParaImagemConverter},ConverterParameter=120}"
+                                       Stretch="UniformToFill"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" />
+                                <iconPacks:PackIconPhosphorIcons Kind="MusicNotesFill"
+                                                                 Width="18"
+                                                                 Height="18"
+                                                                 Foreground="{DynamicResource TextMutedBrush}"
+                                                                 HorizontalAlignment="Center"
+                                                                 VerticalAlignment="Center"
+                                                                 Visibility="{Binding Image, Converter={StaticResource NullToVisibilityConverter}}" />
                             </Grid>
                         </Border>
 
-                        <StackPanel Grid.Column="1" Margin="12,0" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding Titulo}" FontSize="14" FontWeight="SemiBold"
-                                       FontFamily="{StaticResource FonteInter}" TextTrimming="CharacterEllipsis">
+                        <StackPanel Grid.Column="2"
+                                    VerticalAlignment="Top"
+                                    HorizontalAlignment="left"
+                                    Margin="12,0"
+                                    Background="Transparent">
+                            <TextBlock Text="{Binding Titulo}"
+                                       FontWeight="SemiBold"
+                                       FontSize="16"
+                                       TextTrimming="CharacterEllipsis">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
-                                        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+                                        <Setter Property="Foreground"
+                                                Value="{DynamicResource TextPrimaryBrush}" />
                                         <Style.Triggers>
                                             <DataTrigger Value="True">
                                                 <DataTrigger.Binding>
@@ -73,29 +114,117 @@
                                                                  RelativeSource="{RelativeSource AncestorType=UserControl}" />
                                                     </MultiBinding>
                                                 </DataTrigger.Binding>
-                                                <Setter Property="Foreground" Value="{DynamicResource AccentLightBrush}" />
+                                                <Setter Property="Foreground"
+                                                        Value="{DynamicResource AccentLightBrush}" />
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
                                 </TextBlock.Style>
                             </TextBlock>
-                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                <TextBlock Text="{Binding Artista}" FontSize="12" MaxWidth="150"
-                                           FontFamily="{StaticResource FonteInter}"
+                            <StackPanel Orientation="Horizontal"
+                                        Margin="0,4">
+                                <TextBlock Text="{Binding Artista}"
+                                           FontSize="12"
+                                           MaxWidth="160"
+                                           VerticalAlignment="Center"
                                            Foreground="{DynamicResource TextSecondaryBrush}"
                                            TextTrimming="CharacterEllipsis" />
-                                <TextBlock Text="•" Margin="4,0" Foreground="{DynamicResource TextSecondaryBrush}" />
-                                <TextBlock Text="{Binding Album}" FontSize="12" MaxWidth="150"
-                                           FontFamily="{StaticResource FonteInter}"
+                                <TextBlock Text="•"
+                                           Margin="4,0"
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <TextBlock Text="{Binding Album}"
+                                           FontSize="12"
+                                           MaxWidth="160"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Border BorderThickness="0"
+                                        Visibility="{Binding TemLetraDisponivel, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                        CornerRadius="4"
+                                        Margin="0,0,6,0" Padding="4,1">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Value="True">
+                                                    <DataTrigger.Binding>
+                                                        <MultiBinding Converter="{StaticResource MusicaAtualConverter}">
+                                                            <Binding />
+                                                            <Binding Path="DataContext.PlayerViewModel.MusicaAtual"
+                                                                     RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                                                        </MultiBinding>
+                                                    </DataTrigger.Binding>
+                                                    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <TextBlock Text="{DynamicResource Str_Letras}"
+                                               FontSize="11" FontWeight="Regular"
+                                               VerticalAlignment="Center"
+                                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                                </Border>
+                                <TextBlock Text="{Binding DuracaoArredondada}"
+                                           FontSize="11"
+                                           VerticalAlignment="Center"
                                            Foreground="{DynamicResource TextSecondaryBrush}"
                                            TextTrimming="CharacterEllipsis" />
                             </StackPanel>
                         </StackPanel>
+                        <StackPanel Grid.Column="3"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Margin="30,0">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility"
+                                            Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding DataContext.OrdemAtual,
+                                                     RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
+                                                     Value="MaisTocada">
+                                            <Setter Property="Visibility"
+                                                    Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
 
-                        <TextBlock Grid.Column="2" Text="{Binding DuracaoArredondada}" FontSize="11"
-                                   Margin="10,0" VerticalAlignment="Center"
-                                   FontFamily="{StaticResource FonteInter}"
-                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock Text="{Binding VezesTocada}"
+                                       FontSize="14"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                        </StackPanel>
+                        <iconPacks:PackIconPhosphorIcons Grid.Column="4"
+                                                         Margin="16,0"
+                                                         Width="18"
+                                                         Height="18"
+                                                         VerticalAlignment="Center">
+                            <iconPacks:PackIconPhosphorIcons.Style>
+                                <Style TargetType="iconPacks:PackIconPhosphorIcons">
+                                    <Setter Property="Foreground"
+                                            Value="{DynamicResource TextMutedBrush}" />
+                                    <Setter Property="Kind"
+                                            Value="Equalizer" />
+                                    <Style.Triggers>
+                                        <DataTrigger Value="True">
+                                            <DataTrigger.Binding>
+                                                <MultiBinding Converter="{StaticResource MusicaAtualConverter}">
+                                                    <Binding />
+                                                    <Binding Path="DataContext.PlayerViewModel.MusicaAtual"
+                                                             RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                                                </MultiBinding>
+                                            </DataTrigger.Binding>
+                                            <Setter Property="Foreground"
+                                                    Value="{DynamicResource AccentBrush}" />
+                                            <Setter Property="Kind"
+                                                    Value="Waveform" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </iconPacks:PackIconPhosphorIcons.Style>
+                        </iconPacks:PackIconPhosphorIcons>
                     </Grid>
                 </Grid>
             </Border>
@@ -116,14 +245,10 @@
                         hc:BorderElement.CornerRadius="50"
                         Foreground="{DynamicResource TextSecondaryBrush}"
                         Margin="16,0,0,0" VerticalAlignment="Center">
-                    <iconPacks:PackIconBoxIcons Kind="SolidUndo" />
+                    <iconPacks:PackIconPhosphorIcons Kind="ArrowUUpLeftBold" Width="18" Height="18" />
                 </Button>
                 <TextBlock Text="{Binding Titulo}" TextTrimming="CharacterEllipsis"
-                           Style="{StaticResource ConfigSectionTitle}" Margin="20,0,0,0"
-                           FontSize="24" FontWeight="Bold"
-                           FontFamily="{StaticResource FonteHiragino}"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           VerticalAlignment="Center" />
+                           Style="{StaticResource TitleMain}"/>
             </StackPanel>
         </Grid>
         <ListBox Style="{x:Null}"
@@ -134,7 +259,7 @@
                  Margin="8" Padding="8"
                  Background="Transparent" BorderThickness="0"
                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                 ScrollViewer.CanContentScroll="True"
+                 ScrollViewer.CanContentScroll="False"
                  VirtualizingPanel.IsVirtualizing="True"
                  VirtualizingPanel.VirtualizationMode="Recycling">
             <ListBox.Resources>

@@ -1,14 +1,16 @@
 ﻿using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
-using Project_Kitsune.Models;
-using Project_Kitsune.Services;
+using KyoneMusic.Models;
+using KyoneMusic.Services;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Globalization;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-namespace Project_Kitsune.ViewModels.ShellPages
+namespace KyoneMusic.ViewModels.ShellPages
 {
     public partial class MusicListPageViewModel : INotifyPropertyChanged
     {
@@ -21,35 +23,21 @@ namespace Project_Kitsune.ViewModels.ShellPages
 
         public ShellViewModel Shell { get; set; }
 
-        public string FormatoLista
-        {
+        public string FormatoLista {
             get => Shell.FormatoLista;
-            set
-            {
+            set {
                 Shell.FormatoLista = value;
                 OnPropertyChanged();
             }
         }
 
-        private bool estaCarregandoMusicas;
-
-        public bool EstaCarregandoMusicas
-        {
-            get => estaCarregandoMusicas;
-            set
-            {
-                estaCarregandoMusicas = value;
-                OnPropertyChanged();
-            }
-        }
+        public bool EstaCarregandoMusicas => Shell.EstaCarregandoMusicas;
 
         private string _ordemAtual = string.Empty;
 
-        public string OrdemAtual
-        {
+        public string OrdemAtual {
             get => _ordemAtual;
-            set
-            {
+            set {
                 _ordemAtual = value;
                 OnPropertyChanged();
             }
@@ -57,11 +45,9 @@ namespace Project_Kitsune.ViewModels.ShellPages
 
         private bool _ordemDescendente;
 
-        public bool OrdemDescendente
-        {
+        public bool OrdemDescendente {
             get => _ordemDescendente;
-            set
-            {
+            set {
                 _ordemDescendente = value;
                 OnPropertyChanged();
             }
@@ -69,11 +55,9 @@ namespace Project_Kitsune.ViewModels.ShellPages
 
         private Music? _musicaParaScroll;
 
-        public Music? MusicaParaScroll
-        {
+        public Music? MusicaParaScroll {
             get => _musicaParaScroll;
-            set
-            {
+            set {
                 _musicaParaScroll = value;
                 OnPropertyChanged();
             }
@@ -81,17 +65,15 @@ namespace Project_Kitsune.ViewModels.ShellPages
 
         private bool _mostrarOrdenacao;
 
-        public bool MostrarOrdenacao
-        {
+        public bool MostrarOrdenacao {
             get => _mostrarOrdenacao;
-            set
-            {
+            set {
                 _mostrarOrdenacao = value;
                 OnPropertyChanged();
             }
         }
 
-        public IEnumerable<string> Alfabeto { get; } = new[] { "&", "#" }.Concat(Enumerable.Range('A', 26).Select(c => ((char)c).ToString()));
+        public ObservableCollection<string> Alfabeto { get; } = new();
 
         public MusicListPageViewModel(ShellViewModel shell)
         {
@@ -100,7 +82,13 @@ namespace Project_Kitsune.ViewModels.ShellPages
             {
                 if (e.PropertyName == nameof(ShellViewModel.FormatoLista))
                     OnPropertyChanged(nameof(FormatoLista));
+                else if (e.PropertyName == nameof(ShellViewModel.EstaCarregandoMusicas)) {
+                    OnPropertyChanged(nameof(EstaCarregandoMusicas));
+                    if (!Shell.EstaCarregandoMusicas)
+                        AtualizarAlfabeto();
+                }
             };
+
             bibliotecaService = App.ServiceProvider.GetRequiredService<BibliotecaService>();
             configuracaoService = App.ServiceProvider.GetRequiredService<ConfiguracaoService>();
             PlayerViewModel = App.ServiceProvider.GetRequiredService<PlayerViewModel>();
@@ -109,32 +97,15 @@ namespace Project_Kitsune.ViewModels.ShellPages
             Configuracao config = configuracaoService.CarregarConfiguracao();
             OrdemAtual = config.OrdemMusicList;
             OrdemDescendente = config.OrdemDescendente;
-            OnPropertyChanged(nameof(OrdemAtual));
-            _ = CarregarMusicas();
-        }
+            Musicas.CollectionChanged += (s, e) =>
+            {
+                if (e.Action == NotifyCollectionChangedAction.Move) return;
+                if (Shell.EstaCarregandoMusicas) return;
+                AtualizarAlfabeto();
+            };
 
-        private async Task CarregarMusicas()
-        {
-            await Task.Run(() => EstaCarregandoMusicas = true);
-            try
-            {
-                Configuracao config = await Task.Run(() => configuracaoService.CarregarConfiguracao());
-                bibliotecaService.BibliotecaCarregada += () =>
-                {
-                    System.Diagnostics.Debug.WriteLine("Biblioteca carregada!");
-                    PlayerViewModel.ListaAtual = Musicas.ToList();
-                    PlayerViewModel.RestaurarUltimaMusica();
-                };
-                await bibliotecaService.GarantirBibliotecaCarregadaAsync(config.RotaMusica);
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Erro em CarregarMusicas: {ex}");
-            }
-            finally
-            {
-                await Task.Run(() => EstaCarregandoMusicas = false);
-            }
+            AtualizarAlfabeto();
+            OnPropertyChanged(nameof(OrdemAtual));
         }
 
         public void TocarMusica(Music musica)
@@ -149,23 +120,27 @@ namespace Project_Kitsune.ViewModels.ShellPages
             string primeiroElemento = StringInfo.GetNextTextElement(titulo);
 
             string decomposto;
-            try
-            {
+            try {
                 decomposto = primeiroElemento.Normalize(NormalizationForm.FormD);
             }
-            catch (ArgumentException)
-            {
+            catch (ArgumentException) {
                 return char.ToUpperInvariant(titulo[0]);
             }
 
-            foreach (char c in decomposto)
-            {
+            foreach (char c in decomposto) {
                 var categoria = CharUnicodeInfo.GetUnicodeCategory(c);
                 if (categoria != UnicodeCategory.NonSpacingMark)
                     return char.ToUpperInvariant(c);
             }
 
             return char.ToUpperInvariant(titulo[0]);
+        }
+
+        private void AtualizarAlfabeto()
+        {
+            Alfabeto.Clear();
+            foreach (var letra in SelecionarLetras())
+                Alfabeto.Add(letra);
         }
 
         public void MudarOrdenacao(string criterio, bool ordem)
@@ -180,8 +155,7 @@ namespace Project_Kitsune.ViewModels.ShellPages
 
             List<Music> ordenadas = ordenacaoService.Ordenar(Musicas.ToList(), criterio, ordem);
 
-            for (int novoIndice = 0; novoIndice < ordenadas.Count; novoIndice++)
-            {
+            for (int novoIndice = 0; novoIndice < ordenadas.Count; novoIndice++) {
                 Music musica = ordenadas[novoIndice];
                 int indiceAtual = Musicas.IndexOf(musica);
                 if (indiceAtual != novoIndice)
@@ -189,24 +163,51 @@ namespace Project_Kitsune.ViewModels.ShellPages
             }
         }
 
+        private List<string> SelecionarLetras()
+        {
+            var primeiras = Musicas
+                .Select(m => NormalizarPrimeiraLetra(m.Titulo))
+                .ToList();
+
+            bool temNumeros = primeiras.Any(c => c >= '0' && c <= '9');
+            bool temSimbolos = primeiras.Any(c => c == '&');
+
+            var letras = Enumerable.Range('A', 26)
+                .Select(c => (char)c)
+                .Where(letra => primeiras.Contains(letra));
+
+            var extras = primeiras
+                .Where(c => c != '\0' && c != '&' && c != '#' && !( c >= '0' && c <= '9' ) && !( c >= 'A' && c <= 'Z' ))
+                .GroupBy(c => c)
+                .OrderByDescending(g => g.Count())
+                .Take(2)
+                .Select(g => g.Key)
+                .OrderBy(c => c);
+
+            var resultado = new List<string>();
+            if (temSimbolos) resultado.Add("&");
+            if (temNumeros) resultado.Add("#");
+            resultado.AddRange(letras.Select(l => l.ToString()));
+            resultado.AddRange(extras.Select(e => e.ToString()));
+
+            return resultado;
+        }
+
         [RelayCommand]
         private void SaltarParaLetra(string letra)
         {
             Music? alvo;
 
-            if (letra == "#")
-            {
+            if (letra == "#") {
                 alvo = Musicas.FirstOrDefault(m =>
                     !string.IsNullOrEmpty(m.Titulo) && char.IsAsciiDigit(NormalizarPrimeiraLetra(m.Titulo)));
             }
-            else if (letra == "&")
-            {
+            else if (letra == "&") {
                 alvo = Musicas.FirstOrDefault(m =>
-                    string.IsNullOrEmpty(m.Titulo) || (!char.IsAsciiLetter(NormalizarPrimeiraLetra(m.Titulo))
-                    && !char.IsAsciiDigit(NormalizarPrimeiraLetra(m.Titulo))));
+                    string.IsNullOrEmpty(m.Titulo) || ( !char.IsAsciiLetter(NormalizarPrimeiraLetra(m.Titulo))
+                    && !char.IsAsciiDigit(NormalizarPrimeiraLetra(m.Titulo)) ));
             }
-            else
-            {
+            else {
                 char letraAlvo = char.ToUpperInvariant(letra[0]);
                 alvo = Musicas.FirstOrDefault(m =>
                     !string.IsNullOrEmpty(m.Titulo) && NormalizarPrimeiraLetra(m.Titulo) == letraAlvo);
@@ -224,6 +225,13 @@ namespace Project_Kitsune.ViewModels.ShellPages
         private void FecharPainelOrdenacao()
         {
             MostrarOrdenacao = false;
+        }
+
+        [RelayCommand]
+        private void IrParaConfiguracoes()
+        {
+            Shell.Page = "Config";
+            Shell.CurrentPage = new ConfiguracoesPageViewModel(Shell);
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

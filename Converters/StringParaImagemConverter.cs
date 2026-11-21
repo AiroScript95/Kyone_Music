@@ -3,12 +3,17 @@ using System.IO;
 using System.Windows.Data;
 using System.Windows.Media.Imaging;
 
-namespace Project_Kitsune.Converters
+namespace KyoneMusic.Converters
 {
     public class StringParaImagemConverter : IValueConverter
     {
+        private const int LarguraPadrao = 1920;
+
         public object? Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
+
+            int largura = int.TryParse(parameter?.ToString(), out int l) ? l : LarguraPadrao;
+
             if (value is string caminho && !string.IsNullOrWhiteSpace(caminho) && File.Exists(caminho))
             {
                 BitmapImage imagem = new BitmapImage();
@@ -16,7 +21,7 @@ namespace Project_Kitsune.Converters
                 imagem.CacheOption = BitmapCacheOption.OnLoad;
                 imagem.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
                 imagem.UriSource = new Uri(caminho);
-                imagem.DecodePixelWidth = 1920;
+                imagem.DecodePixelWidth = largura;
                 imagem.EndInit();
                 imagem.Freeze();
                 return imagem;

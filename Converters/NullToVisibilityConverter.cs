@@ -2,7 +2,7 @@
 using System.Windows;
 using System.Windows.Data;
 
-namespace Project_Kitsune.Converters
+namespace KyoneMusic.Converters
 {
     public class NullToVisibilityConverter : IValueConverter
     {

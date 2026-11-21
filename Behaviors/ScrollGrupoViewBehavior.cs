@@ -3,7 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace Project_Kitsune.Behaviors
+namespace KyoneMusic.Behaviors
 {
     public class ScrollIntoViewBehavior : Behavior<ListBox>
     {

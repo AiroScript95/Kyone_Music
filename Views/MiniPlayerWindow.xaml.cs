@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Project_Kitsune.Helpers;
-using Project_Kitsune.Models;
-using Project_Kitsune.Services;
-using Project_Kitsune.ViewModels;
+using KyoneMusic.Helpers;
+using KyoneMusic.Models;
+using KyoneMusic.Services;
+using KyoneMusic.ViewModels;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -11,7 +11,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 
-namespace Project_Kitsune.Views
+namespace KyoneMusic.Views
 {
     public partial class MiniPlayerWindow : Window
     {
@@ -20,6 +20,8 @@ namespace Project_Kitsune.Views
         private readonly ConfiguracaoService configuracaoService;
         private readonly Window _mainWindow;
         private DispatcherTimer? _timerScroll;
+        private double _offsetAlvoScroll;
+        private DateTime _ultimoTickScroll;
         private readonly Dictionary<LinhaLetra, FrameworkElement> _mapaLinhas = new();
 
         public MiniPlayerWindow(Window mainWindow)
@@ -131,7 +133,6 @@ namespace Project_Kitsune.Views
                 Top = y;
             }
             else {
-                // Posiciona no canto inferior direito
                 Left = SystemParameters.WorkArea.Right - ActualWidth - margin;
                 Top = SystemParameters.WorkArea.Top + margin;
             }
@@ -145,10 +146,11 @@ namespace Project_Kitsune.Views
             base.OnClosed(e);
 
             // Salva sempre a posição, independente do estado da janela principal
-            Configuracao configuracao = configuracaoService.CarregarConfiguracao();
-            configuracao.MiniJanelaX = Left;
-            configuracao.MiniJanelaY = Top;
-            configuracaoService.GuardarConfiguracao(configuracao);
+            configuracaoService.AtualizarConfiguracao(configuracao =>
+            {
+                configuracao.MiniJanelaX = Left;
+                configuracao.MiniJanelaY = Top;
+            });
 
             if (!_mainWindow.IsVisible) {
                 _mainWindow.Show();
@@ -212,35 +214,50 @@ namespace Project_Kitsune.Views
                 if (offsetMaximo <= 0) return;
 
                 double offsetAlvo = progresso * offsetMaximo;
-                AnimarScrollSuave(ScrollLetras, offsetAlvo, 200, linear: true);
+                AnimarScrollSuave(ScrollLetras, offsetAlvo);
             }
         }
 
-        private void AnimarScrollSuave(ScrollViewer scrollViewer, double offsetAlvo, int duracaoMs = 130, bool linear = false)
+        private void AnimarScrollSuave(ScrollViewer scrollViewer, double offsetAlvo)
         {
-            if (scrollViewer == null) return;
+            _offsetAlvoScroll = offsetAlvo;
 
-            _timerScroll?.Stop();
+            DispatcherTimer timer = _timerScroll ??= CriarTimerScroll(scrollViewer);
 
-            double offsetInicial = scrollViewer.VerticalOffset;
-            double diferenca = offsetAlvo - offsetInicial;
-            if (Math.Abs(diferenca) < 1) return;
+            if (!timer.IsEnabled) {
+                _ultimoTickScroll = DateTime.UtcNow;
+                timer.Start();
+            }
+        }
 
-            var relogio = System.Diagnostics.Stopwatch.StartNew();
-            var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
-            _timerScroll = timer;
-
-            timer.Tick += (s, e) =>
+        private DispatcherTimer CriarTimerScroll(ScrollViewer scrollViewer)
+        {
+            var timer = new DispatcherTimer(DispatcherPriority.Render)
             {
-                double progresso = Math.Min(1, relogio.ElapsedMilliseconds / (double)duracaoMs);
-                double suavizado = linear ? progresso : 1 - Math.Pow(1 - progresso, 3);
-
-                scrollViewer.ScrollToVerticalOffset(offsetInicial + diferenca * suavizado);
-
-                if (progresso >= 1) timer.Stop();
+                Interval = TimeSpan.FromMilliseconds(16)
             };
 
-            timer.Start();
+            timer.Tick += (_, _) =>
+            {
+                DateTime agora = DateTime.UtcNow;
+                double deltaTempo = ( agora - _ultimoTickScroll ).TotalSeconds;
+                _ultimoTickScroll = agora;
+
+                double atual = scrollViewer.VerticalOffset;
+                double fator = 1 - Math.Exp(-deltaTempo / 0.12);
+                double proximo = atual + ( _offsetAlvoScroll - atual ) * fator;
+
+                if (Math.Abs(_offsetAlvoScroll - proximo) < 0.5) {
+                    scrollViewer.ScrollToVerticalOffset(_offsetAlvoScroll);
+                    timer.Stop();
+                    _timerScroll = null;
+                    return;
+                }
+
+                scrollViewer.ScrollToVerticalOffset(proximo);
+            };
+
+            return timer;
         }
 
         private void LinhaLetra_Click(object sender, MouseButtonEventArgs e)

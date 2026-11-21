@@ -1,15 +1,16 @@
 ﻿using CommunityToolkit.Mvvm.Input;
-using Project_Kitsune.Models;
-using Project_Kitsune.Services;
+using KyoneMusic.Models;
+using KyoneMusic.Services;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Diagnostics;
 
-namespace Project_Kitsune.ViewModels
+namespace KyoneMusic.ViewModels
 {
     public partial class EditarMusicaViewModel : INotifyPropertyChanged
     {
         private readonly Music _musicaOriginal;
-        private readonly BibliotecaService _biblioteca; // ou onde o SalvarEdicaoMusica mora
+        private readonly BibliotecaService _biblioteca;
 
         public string Titulo { get; set; }
         public string Artista { get; set; }
@@ -31,8 +32,13 @@ namespace Project_Kitsune.ViewModels
         [RelayCommand]
         private void Salvar()
         {
-            _biblioteca.SalvarEdicaoMusica(_musicaOriginal, Titulo, Artista, Album, Genero);
-            FechadoComSucesso?.Invoke();
+            try {
+                _biblioteca.SalvarEdicaoMusica(_musicaOriginal, Titulo, Artista, Album, Genero);
+                FechadoComSucesso?.Invoke();
+            }
+            catch (Exception ex) {
+                Debug.WriteLine(ex.Message);
+            }
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

@@ -13,7 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace Project_Kitsune.Views.ShellPages.SearchPages
+namespace KyoneMusic.Views.ShellPages.SearchPages
 {
     /// <summary>
     /// Interação lógica para SearchArtistaPage.xam

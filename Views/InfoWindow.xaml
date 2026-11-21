@@ -1,0 +1,32 @@
+﻿<Window x:Class="KyoneMusic.Views.InfoWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:KyoneMusic.Views"
+        mc:Ignorable="d"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None"
+        Title="InfoWindow" Height="400" Width="600">
+    <Grid Background="{DynamicResource SurfaceBrush}">
+        <Grid Margin="10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="auto"/>
+            </Grid.RowDefinitions>
+            <Grid>
+
+                <Image Source="{Binding Image,Converter={StaticResource BytesParaImagemConverter},ConverterParameter=400}"/>
+                <TextBlock Text="{Binding Titulo}"/>
+                <TextBlock Text="{Binding Titulo}"/>
+                <TextBlock Text="{Binding Titulo}"/>
+                <TextBlock Text="{Binding Titulo}"/>
+                <TextBlock Text="{Binding Titulo}"/>
+                <TextBlock Text="{Binding Titulo}"/>
+            </Grid>
+            <Button Style="{StaticResource ActionButton}" Click="Fechar_Click"
+                    Content="{DynamicResource Str_Fechar}" HorizontalAlignment="Right"
+                    Grid.Row="1"/>
+        </Grid>
+    </Grid>
+</Window>

@@ -1,11 +1,11 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Project_Kitsune.Models;
-using Project_Kitsune.Services;
-using Project_Kitsune.ViewModels.ShellPages;
+using KyoneMusic.Models;
+using KyoneMusic.Services;
+using KyoneMusic.ViewModels.ShellPages;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace Project_Kitsune.Views.ShellPages
+namespace KyoneMusic.Views.ShellPages
 {
     /// <summary>
     /// Interaction logic for ConfigTemaPage.xaml
@@ -20,13 +20,14 @@ namespace Project_Kitsune.Views.ShellPages
             InitializeComponent();
             Configuracao configuracao = configuracaoService.CarregarConfiguracao();
             if (configuracao.FormatoLista == "List") RadioList.IsChecked = true;
-            else RadioGrid.IsChecked = true;
+            if (configuracao.FormatoLista == "Grid") RadioGrid.IsChecked = true;
+            if (configuracao.FormatoLista == "Compact") RadioCompact.IsChecked = true;
+            else RadioList.IsChecked = true;
         }
 
         private void TemaSelect_Checked(object sender, RoutedEventArgs e)
         {
-            if (sender is RadioButton radio && radio.IsChecked == true)
-            {
+            if (sender is RadioButton radio && radio.IsChecked == true) {
                 string criterio = radio.Name switch
                 {
                     "RadioAsa" => "Asa",
@@ -40,8 +41,7 @@ namespace Project_Kitsune.Views.ShellPages
                     _ => "Asa"
                 };
 
-                if (DataContext is ConfigThemePageViewModel viewModel)
-                {
+                if (DataContext is ConfigThemePageViewModel viewModel) {
                     viewModel.TemaSelecionado = criterio;
                 }
             }
@@ -49,8 +49,7 @@ namespace Project_Kitsune.Views.ShellPages
 
         private void BorderSelect_Checked(object sender, RoutedEventArgs e)
         {
-            if (sender is RadioButton radio && radio.IsChecked == true)
-            {
+            if (sender is RadioButton radio && radio.IsChecked == true) {
                 string criterio = radio.Name switch
                 {
                     "RadioNormal" => "Normal",
@@ -61,8 +60,7 @@ namespace Project_Kitsune.Views.ShellPages
                     _ => "Normal"
                 };
 
-                if (DataContext is ConfigThemePageViewModel viewModel)
-                {
+                if (DataContext is ConfigThemePageViewModel viewModel) {
                     viewModel.MudarBorder(criterio);
                 }
             }
@@ -70,16 +68,15 @@ namespace Project_Kitsune.Views.ShellPages
 
         private void FormatoSelect_Checked(object sender, RoutedEventArgs e)
         {
-            if (sender is RadioButton radio && radio.IsChecked == true)
-            {
+            if (sender is RadioButton radio && radio.IsChecked == true) {
                 string formato = radio.Name switch
                 {
                     "RadioList" => "List",
                     "RadioGrid" => "Grid",
+                    "RadioCompact" => "Compact",
                     _ => "List"
                 };
-                if (DataContext is ConfigThemePageViewModel viewModel)
-                {
+                if (DataContext is ConfigThemePageViewModel viewModel) {
                     viewModel.MudarFormato(formato);
                 }
             }

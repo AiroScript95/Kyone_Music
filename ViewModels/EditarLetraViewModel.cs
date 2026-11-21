@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.Input;
-using Project_Kitsune.Services;
+using KyoneMusic.Services;
+using KyoneMusic.Models;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -7,7 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace Project_Kitsune.ViewModels
+namespace KyoneMusic.ViewModels
 {
     public partial class EditarLetraViewModel : INotifyPropertyChanged
     {
@@ -15,14 +16,17 @@ namespace Project_Kitsune.ViewModels
         private readonly string _caminhoLrc;
 
         public string Letra { get; set; }
+        private FonteLetra Fonte;
+        private OrigemLetraStore origemLetraStore = new();
 
         public event Action? FechadoComSucesso;
 
-        public EditarLetraViewModel(string caminhoLrc, string textoInicial, BibliotecaService biblioteca)
+        public EditarLetraViewModel(string caminhoLrc, string textoInicial, FonteLetra fonte, BibliotecaService biblioteca)
         {
             _caminhoLrc = caminhoLrc;
             _biblioteca = biblioteca;
             Letra = textoInicial;
+            Fonte = fonte;
         }
 
         [RelayCommand]
@@ -30,6 +34,7 @@ namespace Project_Kitsune.ViewModels
         {
             try {
                 await _biblioteca.SalvarLetra(_caminhoLrc, Letra);
+                origemLetraStore.Registar(_caminhoLrc, Fonte);
                 FechadoComSucesso?.Invoke();
             }
             catch (Exception ex) {

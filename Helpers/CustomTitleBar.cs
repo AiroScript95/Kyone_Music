@@ -10,112 +10,109 @@ using System.Windows.Media;
 ///     CustomTitleBar.Apply(this, MinimizeButton, MaximizeButton, CloseButton);
 /// A barra tem de ter 32 de altura (igual ao CaptionHeight abaixo).
 /// </summary>
-public static class CustomTitleBar
+///
+namespace KyoneMusic.Helpers
 {
-    private const int WM_NCLBUTTONDOWN = 0x00A1;
-    private const int WM_NCMOUSELEAVE = 0x02A2;
-    private const int WM_NCLBUTTONUP = 0x00A2;
-    private const int WM_NCHITTEST = 0x0084;
-    private const int HTMINBUTTON = 8;
-    private const int HTMAXBUTTON = 9;
-    private const int HTCLOSE = 20;
-
-    public static void Apply(Window window, FrameworkElement minimize, FrameworkElement maximize, FrameworkElement close)
+    public static class CustomTitleBar
     {
-        // SingleBorderWindow + WindowChrome mantém animações, Aero Snap e Win+setas
-        //window.WindowStyle = WindowStyle.SingleBorderWindow;
-        WindowChrome.SetWindowChrome(window, new WindowChrome
+        private const int WM_NCLBUTTONDOWN = 0x00A1;
+        private const int WM_NCMOUSELEAVE = 0x02A2;
+        private const int WM_NCLBUTTONUP = 0x00A2;
+        private const int WM_NCHITTEST = 0x0084;
+        private const int HTMINBUTTON = 8;
+        private const int HTMAXBUTTON = 9;
+        private const int HTCLOSE = 20;
+
+        public static void Apply(Window window, FrameworkElement minimize, FrameworkElement maximize, FrameworkElement close)
         {
-            CaptionHeight = 32,
-            ResizeBorderThickness = new Thickness(6),
-            UseAeroCaptionButtons = false,
-            GlassFrameThickness = new Thickness(-1),
-            CornerRadius = new CornerRadius(1)
-        });
-
-        WindowChrome.SetIsHitTestVisibleInChrome(minimize, true);
-        WindowChrome.SetIsHitTestVisibleInChrome(maximize, true);
-        WindowChrome.SetIsHitTestVisibleInChrome(close, true);
-
-        // Maximizada, a janela ultrapassa o ecrã pela espessura da moldura
-        window.StateChanged += (_, _) => AjustarMargem(window);
-        window.Loaded += (_, _) => AjustarMargem(window);
-
-        FrameworkElement? hot = null;
-        void SetHot(FrameworkElement? novo)
-        {
-            if (ReferenceEquals(hot, novo)) return;
-            Pintar(hot, false);
-            hot = novo;
-            Pintar(hot, true);
-        }
-
-        // Responde ao Windows com HTMAXBUTTON/HTMINBUTTON/HTCLOSE sobre os teus botões
-        IntPtr Hook(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
-        {
-            if (msg == WM_NCMOUSELEAVE) { SetHot(null); return IntPtr.Zero; }
-
-            if (msg == WM_NCLBUTTONDOWN || msg == WM_NCLBUTTONUP)
+            WindowChrome.SetWindowChrome(window, new WindowChrome
             {
-                int ht = (int)wParam.ToInt64();
-                if (ht == HTMINBUTTON || ht == HTMAXBUTTON || ht == HTCLOSE)
-                {
-                    handled = true;                      // impede o desenho nativo
-                    if (msg == WM_NCLBUTTONUP)
-                    {
-                        if (ht == HTMINBUTTON) SystemCommands.MinimizeWindow(window);
-                        else if (ht == HTCLOSE) SystemCommands.CloseWindow(window);
-                        else if (window.WindowState == WindowState.Maximized) SystemCommands.RestoreWindow(window);
-                        else SystemCommands.MaximizeWindow(window);
-                        SetHot(null);
-                    }
-                    return IntPtr.Zero;
-                }
+                CaptionHeight = 32,
+                ResizeBorderThickness = new Thickness(6),
+                UseAeroCaptionButtons = false,
+                GlassFrameThickness = new Thickness(-1),
+                CornerRadius = new CornerRadius(1)
+            });
+
+            WindowChrome.SetIsHitTestVisibleInChrome(minimize, true);
+            WindowChrome.SetIsHitTestVisibleInChrome(maximize, true);
+            WindowChrome.SetIsHitTestVisibleInChrome(close, true);
+
+            window.StateChanged += (_, _) => AjustarMargem(window);
+            window.Loaded += (_, _) => AjustarMargem(window);
+
+            FrameworkElement? hot = null;
+            void SetHot(FrameworkElement? novo)
+            {
+                if (ReferenceEquals(hot, novo)) return;
+                Pintar(hot, false);
+                hot = novo;
+                Pintar(hot, true);
             }
-            if (msg != WM_NCHITTEST) return IntPtr.Zero;
 
-            // Coordenadas assinadas (sem OverflowException em 64 bits), em pixels físicos
-            int lp = unchecked((int)(long)lParam);
-            var client = window.PointFromScreen(new Point((short)(lp & 0xFFFF), (short)((lp >> 16) & 0xFFFF)));
+            IntPtr Hook(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+            {
 
-            if (Hit(window, close, client)) { SetHot(close); handled = true; return (IntPtr)HTCLOSE; }
-            if (Hit(window, maximize, client)) { SetHot(maximize); handled = true; return (IntPtr)HTMAXBUTTON; }
-            if (Hit(window, minimize, client)) { SetHot(minimize); handled = true; return (IntPtr)HTMINBUTTON; }
+                if (msg == WM_NCMOUSELEAVE) { SetHot(null); return IntPtr.Zero; }
 
-            SetHot(null);
-            return IntPtr.Zero;
+                if (msg == WM_NCLBUTTONDOWN || msg == WM_NCLBUTTONUP) {
+                    int ht = (int)wParam.ToInt64();
+                    if (ht == HTMINBUTTON || ht == HTMAXBUTTON || ht == HTCLOSE) {
+                        handled = true;
+                        if (msg == WM_NCLBUTTONUP) {
+                            if (ht == HTMINBUTTON) SystemCommands.MinimizeWindow(window);
+                            else if (ht == HTCLOSE) SystemCommands.CloseWindow(window);
+                            else if (window.WindowState == WindowState.Maximized) SystemCommands.RestoreWindow(window);
+                            else SystemCommands.MaximizeWindow(window);
+                            SetHot(null);
+                        }
+                        return IntPtr.Zero;
+                    }
+                }
+                if (msg != WM_NCHITTEST) return IntPtr.Zero;
+
+                int lp = unchecked((int)(long)lParam);
+                var client = window.PointFromScreen(new Point((short)( lp & 0xFFFF ), (short)( ( lp >> 16 ) & 0xFFFF )));
+
+                if (Hit(window, close, client)) { SetHot(close); handled = true; return (IntPtr)HTCLOSE; }
+                if (Hit(window, maximize, client)) { SetHot(maximize); handled = true; return (IntPtr)HTMAXBUTTON; }
+                if (Hit(window, minimize, client)) { SetHot(minimize); handled = true; return (IntPtr)HTMINBUTTON; }
+
+                SetHot(null);
+                return IntPtr.Zero;
+            }
+
+            void AddHook()
+            {
+                if (PresentationSource.FromVisual(window) is HwndSource source)
+                    source.AddHook(Hook);
+            }
+
+            if (new WindowInteropHelper(window).Handle != IntPtr.Zero) AddHook();
+            else window.SourceInitialized += (_, _) => AddHook();
         }
 
-        void AddHook()
+        private static bool Hit(Window window, FrameworkElement element, Point clientPoint)
         {
-            if (PresentationSource.FromVisual(window) is HwndSource source)
-                source.AddHook(Hook);
+            if (!element.IsVisible) return false;
+            var pos = element.TranslatePoint(new Point(0, 0), window);
+            var rect = new Rect(pos.X, pos.Y, element.ActualWidth, element.ActualHeight);
+            rect.Inflate(2, 2);
+            return rect.Contains(clientPoint);
         }
 
-        if (new WindowInteropHelper(window).Handle != IntPtr.Zero) AddHook();
-        else window.SourceInitialized += (_, _) => AddHook();
-    }
-
-    private static bool Hit(Window window, FrameworkElement element, Point clientPoint)
-    {
-        var pos = element.TranslatePoint(new Point(0, 0), window);
-        var rect = new Rect(pos.X, pos.Y, element.ActualWidth, element.ActualHeight);
-        rect.Inflate(2, 2);
-        return rect.Contains(clientPoint);
-    }
-
-    private static void AjustarMargem(Window window)
-    {
-        if (window.Content is FrameworkElement root)
+        private static void AjustarMargem(Window window)
         {
-            root.Margin = window.WindowState == WindowState.Maximized ? SystemParameters.WindowResizeBorderThickness : new Thickness(0);
+            if (window.Content is FrameworkElement root) {
+                root.Margin = window.WindowState == WindowState.Maximized ? SystemParameters.WindowResizeBorderThickness : new Thickness(0);
+            }
         }
-    }
 
-    private static void Pintar(FrameworkElement? botao, bool ativo)
-    {
-        if (botao is not Control c) return;
-        if (ativo) c.SetResourceReference(Control.BackgroundProperty, "SurfaceAltBrush");
-        else c.ClearValue(Control.BackgroundProperty);
+        private static void Pintar(FrameworkElement? botao, bool ativo)
+        {
+            if (botao is not Control c) return;
+            if (ativo) c.SetResourceReference(Control.BackgroundProperty, "SurfaceAltBrush");
+            else c.ClearValue(Control.BackgroundProperty);
+        }
     }
 }

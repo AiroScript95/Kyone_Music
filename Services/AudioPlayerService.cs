@@ -1,14 +1,18 @@
-﻿using ManagedBass;
+﻿using KyoneMusic.Models;
+using ManagedBass;
 using ManagedBass.Fx;
 using ManagedBass.Mix;
-using Project_Kitsune.Models;
-using System.IO;
-using System.Text.Json;
-using System.Runtime.InteropServices;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Text.Json;
 
-namespace Project_Kitsune.Services
+namespace KyoneMusic.Services
 {
+    public record DispositivoAudio(int Indice, string Nome, string Driver);
+
     public class AudioPlayerService : IDisposable
     {
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
@@ -21,19 +25,23 @@ namespace Project_Kitsune.Services
 
         public event Action? PlaybackStarted;
 
-        private const int FadeDurationMs = 200;
+        private const int FadeDurationMs = 250;
         public bool Terminou { get; private set; }
         private int _mixerHandle;
         private int _streamAtual;
         private int _fxEqHandle;
+        private readonly ConcurrentDictionary<int, SyncProcedure> _syncDelegates = new();
         private readonly PeakEQParameters[] _bandasEq = new PeakEQParameters[10];
-        private readonly Dictionary<int, SyncProcedure> _syncDelegates = new();
         private readonly SemaphoreSlim _trocaSemaphore = new SemaphoreSlim(1, 1);
+        private int _disposed;
         private long _playToken = 0;
         private int _volumeAlvo = 100;
         private static readonly double[] _frequenciasPadrao = { 31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000 };
         private List<PresetEqualizador> _presets = new();
         public List<double> _frequenciasBanda { get; set; } = new();
+        private readonly float[] _ganhosBase = new float[10];
+        private float _preampDb;
+        private int _dispositivoAtual = 1;
 
         public AudioPlayerService(ConfiguracaoService configuracaoService)
         {
@@ -88,20 +96,50 @@ namespace Project_Kitsune.Services
 
                 var presetsFile = JsonSerializer.Deserialize<EqPresetsFile>(textJson, opcoes);
 
-                if (presetsFile == null) return new List<PresetEqualizador>();
+                if (presetsFile == null)
+                    return new List<PresetEqualizador>();
 
-                _frequenciasBanda = presetsFile.FrequenciesHz;
+                List<double> frequencias = presetsFile.FrequenciesHz?
+                    .Where(f => f > 0 && !double.IsNaN(f) && !double.IsInfinity(f))
+                    .Take(10)
+                    .ToList() ?? new List<double>();
 
-                return presetsFile.Presets.Select((p, i) => new PresetEqualizador
-                {
-                    Indice = (uint)i,
-                    Nome = p.Name,
-                    Bandas = presetsFile.FrequenciesHz.Zip(p.ValuesDb, (freq, db) => new BandaEq
+                _frequenciasBanda = frequencias.Count == 10
+                    ? frequencias
+                    : _frequenciasPadrao.ToList();
+
+                List<PresetEqualizador> presets = new();
+
+                foreach ((EqPresetJson preset, int indice) in presetsFile.Presets.Select((preset, indice) => (preset, indice))) {
+                    List<BandaEq> bandas = new();
+
+                    int quantidade = Math.Min(
+                        _frequenciasBanda.Count,
+                        preset.ValuesDb?.Count ?? 0);
+
+                    for (int i = 0; i < quantidade; i++) {
+                        double ganho = preset.ValuesDb is not null && i < preset.ValuesDb.Count ? preset.ValuesDb[i] : 0;
+
+                        if (double.IsNaN(ganho) || double.IsInfinity(ganho)) ganho = 0;
+
+                        bandas.Add(new BandaEq
+                        {
+                            Frequencia = _frequenciasBanda[i],
+                            GanhoDb = Math.Clamp(ganho, -12, 12)
+                        });
+                    }
+
+                    presets.Add(new PresetEqualizador
                     {
-                        Frequencia = freq,
-                        GanhoDb = db
-                    }).ToList()
-                }).ToList();
+                        Indice = (uint)indice,
+                        Nome = string.IsNullOrWhiteSpace(preset.Name)
+                            ? $"Preset {indice + 1}"
+                            : preset.Name,
+                        Bandas = bandas
+                    });
+                }
+
+                return presets;
             }
             catch (JsonException ex) {
                 Debug.WriteLine($"[EQ] Erro ao ler presets: {ex.Message}");
@@ -140,23 +178,27 @@ namespace Project_Kitsune.Services
 
         public void DefinirGanhoBanda(uint banda, float valorDb)
         {
-            if (banda >= 10) return;
+            if (banda >= _bandasEq.Length)
+                return;
 
-            _bandasEq[banda].fGain = valorDb;
+            valorDb = Math.Clamp(valorDb, -12f, 12f);
 
-            if (_fxEqHandle != 0) {
+            _ganhosBase[banda] = valorDb;
+            _bandasEq[banda].fGain = valorDb + _preampDb;
+
+            if (_fxEqHandle != 0)
                 Bass.FXSetParameters(_fxEqHandle, _bandasEq[banda]);
-            }
         }
 
         public void DefinirPreamp(float valorDb)
         {
-            for (int i = 0; i < 10; i++) {
-                _bandasEq[i].fGain += valorDb;
+            _preampDb = Math.Clamp(valorDb, -12f, 12f);
 
-                if (_fxEqHandle != 0) {
+            for (int i = 0; i < _bandasEq.Length; i++) {
+                _bandasEq[i].fGain = _ganhosBase[i] + _preampDb;
+
+                if (_fxEqHandle != 0)
                     Bass.FXSetParameters(_fxEqHandle, _bandasEq[i]);
-                }
             }
         }
 
@@ -175,6 +217,9 @@ namespace Project_Kitsune.Services
 
         public void TocarAudio(string path)
         {
+            if (Volatile.Read(ref _disposed) != 0)
+                return;
+
             long meuToken = Interlocked.Increment(ref _playToken);
             _ = TocarAudioAsync(path, meuToken);
         }
@@ -241,7 +286,7 @@ namespace Project_Kitsune.Services
                 if (!mixerTocando) {
                     Debug.WriteLine($"[BASS] ChannelPlay do mixer falhou: {Bass.LastError}");
                     BassMix.MixerRemoveChannel(novoStream);
-                    _syncDelegates.Remove(novoStream);
+                    _syncDelegates.TryRemove(novoStream, out _);
                     Bass.StreamFree(novoStream);
                     if (_streamAtual == novoStream) _streamAtual = streamAntigo;
                     ErroReproducao?.Invoke();
@@ -257,7 +302,7 @@ namespace Project_Kitsune.Services
 
                 if (streamAntigo != 0 && streamAntigo != novoStream) {
                     BassMix.MixerRemoveChannel(streamAntigo);
-                    _syncDelegates.Remove(streamAntigo);
+                    _syncDelegates.TryRemove(streamAntigo, out _);
                     Bass.StreamFree(streamAntigo);
                 }
             }
@@ -272,7 +317,7 @@ namespace Project_Kitsune.Services
                     catch { }
 
                     try {
-                        _syncDelegates.Remove(novoStream);
+                        _syncDelegates.TryRemove(novoStream, out _);
                     }
                     catch { }
 
@@ -315,17 +360,21 @@ namespace Project_Kitsune.Services
 
         public void PararAudio()
         {
+            if (Volatile.Read(ref _disposed) != 0)
+                return;
+
             try {
+                Interlocked.Increment(ref _playToken);
+
                 if (_streamAtual != 0) {
                     BassMix.MixerRemoveChannel(_streamAtual);
-                    _syncDelegates.Remove(_streamAtual);
+                    _syncDelegates.TryRemove(_streamAtual, out _);
                     Bass.StreamFree(_streamAtual);
                     _streamAtual = 0;
                 }
 
-                if (_mixerHandle != 0) {
+                if (_mixerHandle != 0)
                     Bass.ChannelStop(_mixerHandle);
-                }
             }
             catch (Exception ex) {
                 Debug.WriteLine($"[BASS] Erro ao parar: {ex}");
@@ -412,30 +461,96 @@ namespace Project_Kitsune.Services
             }
         }
 
+        // ───────────────────────────── Dispositivo ─────────────────────────────
+
+        public List<DispositivoAudio> ListarDispositivos()
+        {
+            List<DispositivoAudio> lista = new();
+            int i = 1;
+            while (Bass.GetDeviceInfo(i, out DeviceInfo info)) {
+                Debug.WriteLine($"{i} | {info.Name} | {info.IsDefault} | {info.IsInitialized}");
+                if (info.IsEnabled) {
+                    lista.Add(new DispositivoAudio(i, info.Name, info.Driver));
+                }
+                i++;
+            }
+            return lista;
+        }
+
+        public bool DefinirDispositivo(DispositivoAudio d)
+        {
+            if (d.Indice == _dispositivoAtual) return true;
+            if (!Bass.GetDeviceInfo(d.Indice, out DeviceInfo info) || !info.IsEnabled) return false;
+
+            bool inicializouAgora = false;
+            if (!info.IsInitialized) {
+                // usa os mesmos parâmetros do teu Init inicial
+                if (!Bass.Init(d.Indice, 48000, DeviceInitFlags.Default, IntPtr.Zero)) return false;
+                inicializouAgora = true;
+            }
+
+            if (!Bass.ChannelSetDevice(_mixerHandle, d.Indice)) {
+                if (inicializouAgora) { Bass.CurrentDevice = d.Indice; Bass.Free(); }
+                Bass.CurrentDevice = _dispositivoAtual;
+                return false;
+            }
+
+            _dispositivoAtual = d.Indice;
+            Debug.WriteLine($"pos={Bass.ChannelGetPosition(_streamAtual)} erro={Bass.LastError}");
+            return true;
+        }
+
+        public void AplicarDispositivoGuardado(string? nome, string? driver)
+        {
+            if (string.IsNullOrEmpty(nome)) return;
+            var d = ListarDispositivos().FirstOrDefault(x => x.Nome == nome && x.Driver == ( driver ?? "" ));
+            if (d != null) DefinirDispositivo(d);
+        }
+
         // ───────────────────────────── Dispose ─────────────────────────────
 
         public void Dispose()
         {
+            if (Interlocked.Exchange(ref _disposed, 1) != 0)
+                return;
+
             try {
                 Interlocked.Increment(ref _playToken);
 
-                PararAudio();
+                _trocaSemaphore.Wait();
 
-                if (_fxEqHandle != 0 && _mixerHandle != 0) {
-                    Bass.ChannelRemoveFX(_mixerHandle, _fxEqHandle);
-                    _fxEqHandle = 0;
+                try {
+                    if (_streamAtual != 0) {
+                        BassMix.MixerRemoveChannel(_streamAtual);
+                        _syncDelegates.TryRemove(_streamAtual, out _);
+                        Bass.StreamFree(_streamAtual);
+                        _streamAtual = 0;
+                    }
+
+                    if (_mixerHandle != 0) {
+                        Bass.ChannelStop(_mixerHandle);
+
+                        if (_fxEqHandle != 0) {
+                            Bass.ChannelRemoveFX(_mixerHandle, _fxEqHandle);
+                            _fxEqHandle = 0;
+                        }
+
+                        Bass.StreamFree(_mixerHandle);
+                        _mixerHandle = 0;
+                    }
+
+                    _syncDelegates.Clear();
+                    Bass.Free();
                 }
-
-                if (_mixerHandle != 0) {
-                    Bass.StreamFree(_mixerHandle);
-                    _mixerHandle = 0;
+                finally {
+                    _trocaSemaphore.Release();
                 }
-
-                _syncDelegates.Clear();
-                Bass.Free();
             }
             catch (Exception ex) {
                 Debug.WriteLine($"[AudioPlayerService] Erro no Dispose: {ex}");
+            }
+            finally {
+                _trocaSemaphore.Dispose();
             }
         }
     }

@@ -1,13 +1,14 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
-using Project_Kitsune.Models;
-using Project_Kitsune.ViewModels;
+using KyoneMusic.Models;
+using KyoneMusic.Helpers;
+using KyoneMusic.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Project_Kitsune.Services
+namespace KyoneMusic.Services
 {
     public class GruposService
     {
@@ -20,7 +21,7 @@ namespace Project_Kitsune.Services
         public GruposService(BibliotecaService biblioteca)
         {
             _biblioteca = biblioteca;
-            WeakReferenceMessenger.Default.Register<BibliotecaAlteradaMessage>(this, (r, m) => ((GruposService)r).Invalidar());
+            WeakReferenceMessenger.Default.Register<BibliotecaAlteradaMessage>(this, (r, m) => ( (GruposService)r ).Invalidar());
         }
 
         public Task<List<GrupoMusicas>> ObterAlbunsAsync()
@@ -48,7 +49,6 @@ namespace Project_Kitsune.Services
             });
         }
 
-        // chamar quando a biblioteca mudar (fim do scan, música apagada/editada...)
         public void Invalidar()
         { lock (_lock) { _albuns = null; _artistas = null; } }
 
@@ -67,7 +67,7 @@ namespace Project_Kitsune.Services
 
         private static GrupoMusicas Criar(List<Music> musicas, string nome) => new()
         {
-            Nome = nome,
+            Nome = TextoHelper.NormalizarTexto(nome),
             Capa = musicas.Select(m => m.Image).FirstOrDefault(i => i != null),
             ListaMusicas = musicas.Take(3).Select(m => m.Titulo).ToList(),
             Musicas = musicas

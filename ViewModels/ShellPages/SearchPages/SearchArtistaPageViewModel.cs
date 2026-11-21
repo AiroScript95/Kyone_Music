@@ -1,7 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
-using Project_Kitsune.Models;
-using Project_Kitsune.Services;
+using KyoneMusic.Models;
+using KyoneMusic.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -12,7 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace Project_Kitsune.ViewModels.ShellPages.SearchPages
+namespace KyoneMusic.ViewModels.ShellPages.SearchPages
 {
     public partial class SearchArtistaPageViewModel : INotifyPropertyChanged
     {

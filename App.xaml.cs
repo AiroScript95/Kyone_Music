@@ -1,30 +1,47 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Project_Kitsune.Services;
-using Project_Kitsune.ViewModels;
+using KyoneMusic.Services;
+using KyoneMusic.ViewModels;
+using KyoneMusic.ViewModels.ShellPages;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Diagnostics;
+using System.IO;
 
-namespace Project_Kitsune
+namespace KyoneMusic
 {
     public partial class App : Application
     {
         [LibraryImport("shell32.dll", StringMarshalling = StringMarshalling.Utf16)]
         private static partial int SetCurrentProcessExplicitAppUserModelID(string AppID);
 
+        [LibraryImport("kernel32.dll")]
+        private static partial ushort GetUserDefaultUILanguage();
+
         public event Action? TemaAlterado;
 
         public event Action? IdiomaAlterado;
 
-        private static readonly string[] IdiomasSuportados = ["pt", "en", "ja", "es"];
+        private static readonly string[] IdiomasSuportados = ["pt", "pt-br", "en", "ja", "es"];
 
         public static ServiceProvider ServiceProvider { get; private set; } = null!;
 
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+            File.AppendAllText(
+        Path.Combine(Path.GetTempPath(), "ProjectKitsune-args.txt"),
+        $"{DateTime.Now}: {string.Join(" | ", e.Args)}{Environment.NewLine}");
+            string? ficheiroInicial = e.Args.FirstOrDefault(File.Exists);
+
+            if (!InstanciaUnica.EPrimeira()) {
+                InstanciaUnica.EnviarParaPrimeira(ficheiroInicial);
+                Shutdown();
+                return;
+            }
+
             _ = SetCurrentProcessExplicitAppUserModelID("ProjectKitsune");
             RenderOptions.ProcessRenderMode = RenderMode.Default;
             var services = new ServiceCollection();
@@ -45,31 +62,72 @@ namespace Project_Kitsune
                 DataContext = ServiceProvider.GetRequiredService<MainViewModel>()
             };
             mainWindow.Show();
+
+            var player = ServiceProvider.GetRequiredService<PlayerViewModel>();
+            if (ficheiroInicial != null) player.TocarForaDaLista(ficheiroInicial);
+            InstanciaUnica.Escutar(caminho => Dispatcher.InvokeAsync(() =>
+            {
+                if (mainWindow.WindowState == WindowState.Minimized)
+                    mainWindow.WindowState = WindowState.Normal;
+                mainWindow.Activate();
+                if (!string.IsNullOrEmpty(caminho)) player.TocarForaDaLista(caminho);
+            }));
         }
 
         protected override void OnExit(ExitEventArgs e)
         {
-            var bibliotecaService = ServiceProvider.GetRequiredService<BibliotecaService>();
-            bibliotecaService.PararMonitorizacao();
-
-            base.OnExit(e);
+            try {
+                if (ServiceProvider != null) {
+                    var bibliotecaService = ServiceProvider.GetRequiredService<BibliotecaService>();
+                    bibliotecaService.PararMonitorizacao();
+                    bibliotecaService.Dispose();
+                    var player = ServiceProvider.GetRequiredService<PlayerViewModel>();
+                    player.Dispose();
+                    var audioPlayerService = ServiceProvider.GetRequiredService<AudioPlayerService>();
+                    audioPlayerService.Dispose();
+                    ServiceProvider.Dispose();
+                }
+            }
+            catch (Exception ex) {
+                Debug.WriteLine($"Erro ao encerrar a aplicação: {ex}");
+            }
+            finally {
+                base.OnExit(e);
+            }
         }
 
         public void AplicarTema(string nomeTema)
         {
             var md = Resources.MergedDictionaries;
-            var temaAntigo = md.FirstOrDefault(d => d.Source?.OriginalString.Contains("/Resources/Themes/Colors.") == true);
+            var temaAntigo = md.FirstOrDefault(d => d.Source?.OriginalString.Contains("/Resources/Themes/Colors_") == true);
             if (temaAntigo != null) md.Remove(temaAntigo);
-            md.Add(new ResourceDictionary { Source = new Uri($"/Resources/Themes/Colors.{nomeTema}.xaml", UriKind.Relative) });
+            md.Add(new ResourceDictionary { Source = new Uri($"/Resources/Themes/Colors_{nomeTema}.xaml", UriKind.Relative) });
 
             TemaAlterado?.Invoke();
         }
 
         public static string DetectarIdiomaSistema()
         {
-            string codigo = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
-            System.Diagnostics.Debug.WriteLine(codigo);
-            return IdiomasSuportados.Contains(codigo) ? codigo : "en";
+            ushort languageId = GetUserDefaultUILanguage();
+
+            if (languageId == 0)
+                return "en";
+
+            CultureInfo cultura;
+
+            try {
+                cultura = CultureInfo.GetCultureInfo((int)languageId);
+            }
+            catch (CultureNotFoundException) {
+                return "en";
+            }
+
+            string completo = cultura.Name.ToLowerInvariant();
+            if (IdiomasSuportados.Contains(completo))
+                return completo;
+
+            string curto = cultura.TwoLetterISOLanguageName.ToLowerInvariant();
+            return IdiomasSuportados.Contains(curto) ? curto : "en";
         }
 
         public void AplicarIdioma(string codigoIdioma)

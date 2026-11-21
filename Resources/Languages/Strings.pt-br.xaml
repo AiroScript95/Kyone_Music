@@ -1,0 +1,145 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <!-- ===== Navegação ===== -->
+    <system:String x:Key="Str_Musicas">Músicas</system:String>
+    <system:String x:Key="Str_Playlists">Playlists</system:String>
+    <system:String x:Key="Str_Favoritos">Favoritos</system:String>
+    <system:String x:Key="Str_Artistas">Artistas</system:String>
+    <system:String x:Key="Str_Albuns">Álbuns</system:String>
+    <system:String x:Key="Str_Configuracoes">Configurações</system:String>
+    <system:String x:Key="Str_Biblioteca">Biblioteca</system:String>
+    <system:String x:Key="Str_Voltar">Voltar</system:String>
+    <system:String x:Key="Str_FilaReproducao">Fila de reprodução</system:String>
+
+    <!-- ===== Configurações ===== -->
+    <system:String x:Key="Str_Idioma">Idioma</system:String>
+    <system:String x:Key="Str_Aparencia">Aparência</system:String>
+    <system:String x:Key="Str_Tema">Tema</system:String>
+    <system:String x:Key="Str_Personalizar">Personalizar</system:String>
+    <system:String x:Key="Str_Pasta_Padrao">Pasta padrão</system:String>
+    <system:String x:Key="Str_Add_Pasta">Adicionar pasta</system:String>
+    <system:String x:Key="Str_Selecionar_img">Selecionar imagem</system:String>
+    <system:String x:Key="Str_Lista">Lista</system:String>
+    <system:String x:Key="Str_Grade">Grade</system:String>
+
+    <!-- ===== Ações gerais ===== -->
+    <system:String x:Key="Str_Fechar">Fechar</system:String>
+    <system:String x:Key="Str_Cancelar">Cancelar</system:String>
+    <system:String x:Key="Str_Concluir">Confirmar</system:String>
+    <system:String x:Key="Str_Criar">Criar</system:String>
+    <system:String x:Key="Str_Editar">Editar</system:String>
+    <system:String x:Key="Str_Eliminar">Excluir</system:String>
+    <system:String x:Key="Str_Renomear">Renomear</system:String>
+    <system:String x:Key="Str_Remover">Remover</system:String>
+    <system:String x:Key="Str_Guardar">Salvar</system:String>
+    <system:String x:Key="Str_Aplicar">Aplicar</system:String>
+    <system:String x:Key="Str_Sim">Sim</system:String>
+    <system:String x:Key="Str_Nao">Não</system:String>
+    <system:String x:Key="Str_Ok">OK</system:String>
+    <system:String x:Key="Str_TentarNovamente">Tentar novamente</system:String>
+    <system:String x:Key="Str_VerMais">Ver mais</system:String>
+
+    <!-- ===== Playlists ===== -->
+    <system:String x:Key="Str_Add_Play">Nova playlist</system:String>
+    <system:String x:Key="Str_Nome_Play">Nome da playlist...</system:String>
+    <system:String x:Key="Str_Add_Musica">Adicionar música</system:String>
+    <system:String x:Key="Str_AdicionarAPlaylist">Adicionar à playlist</system:String>
+    <system:String x:Key="Str_RemoverDaPlaylist">Remover da playlist</system:String>
+    <system:String x:Key="Str_ComLetra">Com letra</system:String>
+    <system:String x:Key="Str_SemArtistas">Nenhum artista encontrado</system:String>
+    <system:String x:Key="Str_SemAlbuns">Nenhum álbum encontrado</system:String>
+
+    <!-- ===== Metadados e edição ===== -->
+    <system:String x:Key="Str_Titulo">Título</system:String>
+    <system:String x:Key="Str_Artista">Artista</system:String>
+    <system:String x:Key="Str_Album">Álbum</system:String>
+    <system:String x:Key="Str_Genero">Gênero</system:String>
+
+    <!-- ===== Ordenação ===== -->
+    <system:String x:Key="Str_MusicasOrdenadasPor">Músicas ordenadas por</system:String>
+    <system:String x:Key="Str_Alfabetica">Alfabética</system:String>
+    <system:String x:Key="Str_Mais_recente">Mais recente</system:String>
+    <system:String x:Key="Str_Mais_Tocada">Mais tocada</system:String>
+    <system:String x:Key="Str_Duracao">Duração</system:String>
+    <system:String x:Key="Str_Aleatorio">Aleatório</system:String>
+    <system:String x:Key="Str_Descendente">Decrescente</system:String>
+    <system:String x:Key="Str_Ascendente">Crescente</system:String>
+
+    <!-- ===== Letras ===== -->
+    <system:String x:Key="Str_Letras">Letra</system:String>
+    <system:String x:Key="Str_Sem_Letra">Sem letra</system:String>
+    <system:String x:Key="Str_Add_Letra">Adicionar letra</system:String>
+    <system:String x:Key="Str_Rolagem">Rolagem automática</system:String>
+    <system:String x:Key="Str_Ocultar_controles">Ocultar controles</system:String>
+
+    <!-- ===== Player e painel dos 3 pontos ===== -->
+    <system:String x:Key="Str_Reproduzir">Reproduzir</system:String>
+    <system:String x:Key="Str_Pausar">Pausar</system:String>
+    <system:String x:Key="Str_Seguinte">Próxima</system:String>
+    <system:String x:Key="Str_Anterior">Anterior</system:String>
+    <system:String x:Key="Str_Repetir">Repetir</system:String>
+    <system:String x:Key="Str_Volume">Volume</system:String>
+    <system:String x:Key="Str_Equalizador">Equalizador</system:String>
+    <system:String x:Key="Str_Crossfade">Crossfade</system:String>
+    <system:String x:Key="Str_DeslocamentoLetras">Sincronização da letra</system:String>
+    <system:String x:Key="Str_TemporizadorSono">Timer de sono</system:String>
+    <system:String x:Key="Str_NenhumaMusicaATocar">Nenhuma música tocando</system:String>
+
+    <!-- ===== Pesquisa ===== -->
+    <system:String x:Key="Str_Pesquisa">Música, artista ou álbum...</system:String>
+    <system:String x:Key="Str_SemResultados">Sem resultados</system:String>
+    <system:String x:Key="Str_SemResultadosPara">Sem resultados para "{0}"</system:String>
+    <system:String x:Key="Str_ResultadosPara">Resultados para "{0}"</system:String>
+    <system:String x:Key="Str_NenhumaMusica">Nenhuma música encontrada</system:String>
+
+    <!-- ===== Estados ===== -->
+    <system:String x:Key="Str_Carregar_biblio">Carregando biblioteca...</system:String>
+    <system:String x:Key="Str_ACarregar">Carregando...</system:String>
+    <system:String x:Key="Str_BibliotecaVazia">A biblioteca está vazia</system:String>
+    <system:String x:Key="Str_BibliotecaVaziaAjuda">Adicione uma pasta nas Configurações para começar.</system:String>
+    <system:String x:Key="Str_SemPlaylists">Ainda não há playlists</system:String>
+    <system:String x:Key="Str_PlaylistVazia">Esta playlist está vazia</system:String>
+    <system:String x:Key="Str_SemFavoritos">Ainda não há favoritos</system:String>
+    <system:String x:Key="Str_UmaMusica">1 música</system:String>
+    <system:String x:Key="Str_NumMusicas">{0} músicas</system:String>
+    <system:String x:Key="Str_PastasEmFalta">Pastas não encontradas: {0}</system:String>
+    <system:String x:Key="Str_LetraFonte">Letra fornecido por {0}</system:String>
+    <system:String x:Key="Str_LetraEditada">editada</system:String>
+
+    <!-- ===== Confirmações ===== -->
+    <system:String x:Key="Str_ConfirmarExclusao">Tem certeza de que quer excluir isto?</system:String>
+    <system:String x:Key="Str_ConfirmarEliminarMusica">Excluir esta música? O arquivo vai para a Lixeira.</system:String>
+    <system:String x:Key="Str_ConfirmarEliminarPlaylist">Excluir a playlist "{0}"? As músicas não são apagadas.</system:String>
+    <system:String x:Key="Str_ConfirmarRemoverPasta">Remover esta pasta da biblioteca? Os arquivos não são apagados.</system:String>
+
+    <!-- ===== Títulos de aviso e erro ===== -->
+    <system:String x:Key="Str_Erro">Erro</system:String>
+    <system:String x:Key="Str_Aviso">Aviso</system:String>
+    <system:String x:Key="Str_Informacao">Informação</system:String>
+
+    <!-- ===== Mensagens de erro ===== -->
+    <system:String x:Key="Str_ErroGenerico">Ocorreu um erro inesperado.</system:String>
+    <system:String x:Key="Str_ErroLerMusica">Não foi possível ler esta música.</system:String>
+    <system:String x:Key="Str_ErroReproduzir">Não foi possível reproduzir esta música.</system:String>
+    <system:String x:Key="Str_ErroDispositivoAudio">Não foi possível iniciar o dispositivo de áudio.</system:String>
+    <system:String x:Key="Str_ErroGuardar">Não foi possível salvar as alterações.</system:String>
+    <system:String x:Key="Str_ErroEliminar">Não foi possível excluir o arquivo.</system:String>
+    <system:String x:Key="Str_ErroLetra">Não foi possível obter a letra.</system:String>
+    <system:String x:Key="Str_ErroLigacao">Sem conexão com a internet.</system:String>
+    <system:String x:Key="Str_FicheiroNaoEncontrado">Arquivo não encontrado.</system:String>
+    <system:String x:Key="Str_PastaNaoEncontrada">Pasta não encontrada.</system:String>
+    <system:String x:Key="Str_SemPermissao">Sem permissão para acessar este arquivo.</system:String>
+    <system:String x:Key="Str_FicheiroEmUso">O arquivo está sendo usado por outro programa.</system:String>
+
+    <!-- ===== Avisos de validação ===== -->
+    <system:String x:Key="Str_NomeVazio">O nome não pode estar vazio.</system:String>
+    <system:String x:Key="Str_PlaylistJaExiste">Já existe uma playlist com este nome.</system:String>
+    <system:String x:Key="Str_MusicaJaNaPlaylist">A música já está nesta playlist.</system:String>
+    <system:String x:Key="Str_PastaJaAdicionada">Esta pasta já foi adicionada.</system:String>
+    <system:String x:Key="Str_DispositivoDesligado">Dispositivo desconectado. A biblioteca volta quando for reconectado.</system:String>
+    <system:String x:Key="Str_Sobre">Sobre</system:String>
+    <system:String x:Key="Str_LicencasTerceiros">Licenças de terceiros</system:String>
+    <system:String x:Key="Str_DireitosReservados">Todos os direitos reservados.</system:String>
+</ResourceDictionary>

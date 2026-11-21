@@ -1,6 +1,6 @@
-﻿using Project_Kitsune.Models;
+﻿using KyoneMusic.Models;
 
-namespace Project_Kitsune.Services
+namespace KyoneMusic.Services
 {
     public class OrdenacaoService(DatabaseService database)
     {
@@ -15,6 +15,21 @@ namespace Project_Kitsune.Services
             {
                 "Alfabetica" => ordemDesc ? lista.OrderByDescending(m => m.Titulo).ToList() : lista.OrderBy(m => m.Titulo).ToList(),
                 "MaisRecente" => ordemDesc ? lista.OrderByDescending(m => m.DataAdicionado).ToList() : lista.OrderBy(m => m.DataAdicionado).ToList(),
+                "MaisTocada" => ordemDesc ? lista.OrderByDescending(m => m.VezesTocada).ToList() : lista.OrderBy(m => m.VezesTocada).ToList(),
+                "Duracao" => ordemDesc ? lista.OrderByDescending(m => m.Duracao).ToList() : lista.OrderBy(m => m.Duracao).ToList(),
+                "Aleatorio" => Shuffle(lista),
+                _ => lista
+            };
+        }
+
+        public List<Music> OrdenarPlaylist(List<Music> lista, string criterio, bool ordemDesc)
+        {
+            if (lista == null) return [];
+
+            return criterio switch
+            {
+                "Alfabetica" => ordemDesc ? lista.OrderByDescending(m => m.Titulo).ToList() : lista.OrderBy(m => m.Titulo).ToList(),
+                "MaisRecente" => ordemDesc ? lista.ToList() : lista.AsEnumerable().Reverse().ToList(),
                 "MaisTocada" => ordemDesc ? lista.OrderByDescending(m => m.VezesTocada).ToList() : lista.OrderBy(m => m.VezesTocada).ToList(),
                 "Duracao" => ordemDesc ? lista.OrderByDescending(m => m.Duracao).ToList() : lista.OrderBy(m => m.Duracao).ToList(),
                 "Aleatorio" => Shuffle(lista),

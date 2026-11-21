@@ -1,15 +1,17 @@
 ﻿using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
-using Project_Kitsune.Models;
-using Project_Kitsune.Services;
+using KyoneMusic.Helpers;
+using KyoneMusic.Models;
+using KyoneMusic.Services;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows;
 
-namespace Project_Kitsune.ViewModels.ShellPages
+namespace KyoneMusic.ViewModels.ShellPages
 {
     public partial class PlaylistDetailPageViewModel : INotifyPropertyChanged
     {
@@ -17,24 +19,37 @@ namespace Project_Kitsune.ViewModels.ShellPages
         private readonly BibliotecaService _biblioteca;
         private readonly ConfiguracaoService _configuracao;
         private readonly OrdenacaoService _ordenacaoService;
+
         private readonly ShellViewModel _shell;
         public PlayerViewModel PlayerViewModel { get; set; }
-        private Playlist? _playlistAtual;
+        public Playlist? _playlistAtual;
         public ObservableCollection<Music> Musicas { get; set; } = new();
-        private ObservableCollection<Music> _todasAsMusicas = new();
+        private List<Music> _musicasOriginais = new(); // ordem da BD
+
         private readonly Func<object> _voltarPara;
+
+        private ObservableCollection<Music> _todasAsMusicas = new();
 
         public ObservableCollection<Music> TodasAsMusicas {
             get => _todasAsMusicas;
             set { _todasAsMusicas = value; OnPropertyChanged(); }
         }
 
+        private ObservableCollection<Music> _musicasDaPlaylist = new();
+
+        public ObservableCollection<Music> MusicasDaPlaylist {
+            get => _musicasDaPlaylist;
+            set { _musicasDaPlaylist = value; OnPropertyChanged(); }
+        }
+
+        private List<Music> _musicasParaRemoverOriginal = new();
         private List<Music> _todasAsMusicasOriginal = new();
-        public string NomePlaylist => _playlistAtual?.Name ?? "";
-        private bool EhFavoritos => _playlistAtual?.Name == "Favoritos";
+
+        public string NomePlaylist => TextoHelper.NormalizarTexto(_playlistAtual?.Name ?? "");
+        public bool EhFavoritos => _playlistAtual?.Name == "Favoritos";
         public bool EhComLetra => _playlistAtual?.Id == Playlist.IdComLetra;
 
-        public int NumMusicas => Musicas.Count;
+        public string NumMusicas => TextoHelper.Texto("Str_NumMusicas", Musicas.Count.ToString());
 
         private bool _mostrarPainelAdicionar;
 
@@ -42,6 +57,16 @@ namespace Project_Kitsune.ViewModels.ShellPages
             get => _mostrarPainelAdicionar;
             set {
                 _mostrarPainelAdicionar = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private bool _mostrarPainelRemover;
+
+        public bool MostrarPainelRemover {
+            get => _mostrarPainelRemover;
+            set {
+                _mostrarPainelRemover = value;
                 OnPropertyChanged();
             }
         }
@@ -75,12 +100,57 @@ namespace Project_Kitsune.ViewModels.ShellPages
             }
         }
 
+        private string _textoPesquisaRemover = string.Empty;
+
+        public string TextoPesquisaRemover {
+            get => _textoPesquisaRemover;
+            set {
+                _textoPesquisaRemover = value;
+                OnPropertyChanged();
+                AtualizarFiltroRemover();
+            }
+        }
+
         private int _numeroSelecionadas;
 
         public int NumeroSelecionadas {
             get => _numeroSelecionadas;
             set { _numeroSelecionadas = value; OnPropertyChanged(); }
         }
+
+        private string _ordemAtual = string.Empty;
+
+        public string OrdemAtual {
+            get => _ordemAtual;
+            set {
+                _ordemAtual = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private bool _ordemDescendente;
+
+        public bool OrdemDescendente {
+            get => _ordemDescendente;
+            set {
+                _ordemDescendente = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private bool _mostrarOrdenacao;
+
+        public bool MostrarOrdenacao {
+            get => _mostrarOrdenacao;
+            set {
+                _mostrarOrdenacao = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private List<Music> AplicarOrdem(List<Music> origem) => EhComLetra
+                    ? _ordenacaoService.Ordenar(origem, _playlistAtual!.Ordem, _playlistAtual.Direcao)
+                    : _ordenacaoService.OrdenarPlaylist(origem, _playlistAtual!.Ordem, _playlistAtual.Direcao);
 
         public PlaylistDetailPageViewModel(ShellViewModel shell, Func<object> voltarPara)
         {
@@ -102,6 +172,8 @@ namespace Project_Kitsune.ViewModels.ShellPages
         public void Carregar(Playlist playlist)
         {
             _playlistAtual = playlist;
+            OrdemAtual = playlist.Ordem;
+            OrdemDescendente = playlist.Direcao;
             OnPropertyChanged(nameof(NomePlaylist));
 
             Application.Current.Dispatcher.Invoke(() => Musicas.Clear());
@@ -109,32 +181,41 @@ namespace Project_Kitsune.ViewModels.ShellPages
             var porCaminho = _biblioteca.Musicas.ToDictionary(m => m.Caminho, StringComparer.OrdinalIgnoreCase);
             Task.Run(() =>
             {
-                List<Music> musicasCarregadas = [];
-
+                List<Music> origem = [];
                 if (EhComLetra) {
-                    musicasCarregadas = _ordenacaoService.Ordenar(playlist.Musics, "Alfabetica", false);
+                    origem = [.. playlist.Musics];
+                    AtualizarCapa(playlist);
                 }
                 else {
                     List<string> caminhos = EhFavoritos ? _database.ListarMusicasFavoritas() : _database.ListarMusicasDaPlaylist(playlist.Id);
-
                     foreach (string caminho in caminhos) {
-                        if (porCaminho.TryGetValue(caminho, out Music? musica))
-                            musicasCarregadas.Add(musica);
+                        if (porCaminho.TryGetValue(caminho, out Music? musica)) origem.Add(musica);
                     }
+                    if (EhFavoritos) AtualizarCapaFavoritos(); else AtualizarCapa(playlist);
                 }
-
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    foreach (Music m in musicasCarregadas) Musicas.Add(m);
-                });
-
-                if (EhComLetra) {
-                    byte[]? capa = musicasCarregadas.FirstOrDefault()?.Image;
-                    Application.Current.Dispatcher.Invoke(() => Capa = capa);
-                }
-                else if (!EhFavoritos) AtualizarCapa(playlist);
-                else AtualizarCapaFavoritos();
+                _musicasOriginais = origem;
+                List<Music> ordenadas = AplicarOrdem(origem);
+                Application.Current.Dispatcher.Invoke(() => Repovoar(ordenadas));
             });
+        }
+
+        public void MudarOrdenacao(string criterio, bool ordem)
+        {
+            if (_playlistAtual != null) {
+                _playlistAtual.Ordem = criterio;
+                _playlistAtual.Direcao = ordem;
+                OrdemAtual = criterio;
+                OrdemDescendente = ordem;
+
+                OnPropertyChanged(nameof(OrdemAtual));
+
+                List<Music> ordenadas = AplicarOrdem(_musicasOriginais);
+                Repovoar(ordenadas);
+                AtualizarCapaDaLista();
+
+                Debug.WriteLine($"{_playlistAtual.Id},{criterio}, {ordem}");
+                _database.ReordenarPlaylist(_playlistAtual.Id, _playlistAtual.Ordem, _playlistAtual.Direcao);
+            }
         }
 
         public void AtualizarCapa(Playlist playlist)
@@ -161,6 +242,20 @@ namespace Project_Kitsune.ViewModels.ShellPages
             Application.Current.Dispatcher.Invoke(() => Capa = capaEncontrada);
         }
 
+        private void AtualizarCapaDaLista()
+        {
+            byte[]? primeira = Musicas.FirstOrDefault()?.Image;
+            if (ReferenceEquals(primeira, Capa)) return;
+            Capa = primeira;
+        }
+
+        private void Repovoar(List<Music> itens)
+        {
+            Musicas.Clear();
+            foreach (Music m in itens) Musicas.Add(m);
+            AtualizarCapaDaLista();
+        }
+
         public void TocarMusica(Music musica, List<Music> ListaMusica = null!)
         {
             PlayerViewModel.TocarMusica(musica, ListaMusica ?? Musicas.ToList());
@@ -168,36 +263,27 @@ namespace Project_Kitsune.ViewModels.ShellPages
 
         public void AdicionarMusicaEscolhida(List<Music> musicas)
         {
-            if (_playlistAtual == null) return;
+            if (_playlistAtual == null || EhComLetra) return;
 
-            var novas = new List<Music>();
             foreach (Music music in musicas) {
-                if (Musicas.Any(m => m.Caminho == music.Caminho)) continue;
+                bool jaEstaNaPlaylist = Musicas.Any(m =>
+                                                                                                                                                                                                                                string.Equals(m.Caminho, music.Caminho, StringComparison.OrdinalIgnoreCase));
+
+                if (jaEstaNaPlaylist) continue;
 
                 if (EhFavoritos) {
                     music.Gosto = true;
                     _database.AlternarGosto(music.Caminho, true);
-                    novas.Add(music);
                     continue;
                 }
 
                 int musicaId = _database.ObterIdMusicaPorCaminho(music.Caminho);
                 if (musicaId == -1) continue;
+
                 _database.AdicionarMusicaAPlaylist(_playlistAtual.Id, musicaId);
-                novas.Add(music);
             }
 
-            var lista = Musicas.ToList();
-            lista.InsertRange(0, novas);
-            Repovoar(lista);
-
-            if (EhFavoritos) {
-                AtualizarCapaFavoritos();
-            }
-            else {
-                AtualizarCapa(_playlistAtual);
-            }
-
+            RecarregarMusicasDaPlaylist();
             MostrarPainelAdicionar = false;
         }
 
@@ -210,9 +296,9 @@ namespace Project_Kitsune.ViewModels.ShellPages
 
             var termo = TextoPesquisaAdicionar.Trim();
             var filtradas = _todasAsMusicasOriginal.Where(m =>
-                                                                                                                                                                        ( m.Titulo?.Contains(termo, StringComparison.OrdinalIgnoreCase) ?? false ) ||
-                                                                                                                                                                        ( m.Artista?.Contains(termo, StringComparison.OrdinalIgnoreCase) ?? false ) ||
-                                                                                                                                                                        ( m.Album?.Contains(termo, StringComparison.OrdinalIgnoreCase) ?? false ));
+                                                                                                                                                                                                                                    ( m.Titulo?.Contains(termo, StringComparison.OrdinalIgnoreCase) ?? false ) ||
+                                                                                                                                                                                                                                    ( m.Artista?.Contains(termo, StringComparison.OrdinalIgnoreCase) ?? false ) ||
+                                                                                                                                                                                                                                    ( m.Album?.Contains(termo, StringComparison.OrdinalIgnoreCase) ?? false ));
 
             TodasAsMusicas = new ObservableCollection<Music>(filtradas);
         }
@@ -226,10 +312,39 @@ namespace Project_Kitsune.ViewModels.ShellPages
             AtualizarCapaFavoritos();
         }
 
-        private void Repovoar(List<Music> itens)
+        public void RemoverMusicaEscolhida(List<Music> musicas)
         {
-            Musicas.Clear();
-            foreach (Music m in itens) Musicas.Add(m);
+            if (_playlistAtual == null || EhComLetra) return;
+
+            foreach (Music music in musicas) {
+                if (EhFavoritos) {
+                    _database.AlternarGosto(music.Caminho, false);
+                    music.Gosto = false;
+                    continue;
+                }
+                int musicaId = _database.ObterIdMusicaPorCaminho(music.Caminho);
+                if (musicaId == -1) continue;
+                _database.RemoverMusicaDaPlaylist(_playlistAtual.Id, musicaId);
+            }
+
+            RecarregarMusicasDaPlaylist();
+            MostrarPainelRemover = false;
+        }
+
+        private void AtualizarFiltroRemover()
+        {
+            IEnumerable<Music> filtradas = _musicasParaRemoverOriginal;
+
+            if (!string.IsNullOrWhiteSpace(TextoPesquisaRemover)) {
+                string termo = TextoPesquisaRemover.Trim();
+
+                filtradas = filtradas.Where(m =>
+                                                                                                                                                                                                                                                            ( m.Titulo?.Contains(termo, StringComparison.OrdinalIgnoreCase) ?? false ) ||
+                                                                                                                                                                                                                                                            ( m.Artista?.Contains(termo, StringComparison.OrdinalIgnoreCase) ?? false ) ||
+                                                                                                                                                                                                                                                            ( m.Album?.Contains(termo, StringComparison.OrdinalIgnoreCase) ?? false ));
+            }
+
+            MusicasDaPlaylist = new ObservableCollection<Music>(filtradas);
         }
 
         [RelayCommand]
@@ -251,28 +366,32 @@ namespace Project_Kitsune.ViewModels.ShellPages
         [RelayCommand]
         private void FecharPainelAdicionar()
         {
+            NumeroSelecionadas = 0;
             MostrarPainelAdicionar = false;
+        }
+
+        private void RecarregarMusicasDaPlaylist()
+        {
+            var porCaminho = _biblioteca.Musicas.ToDictionary(
+m => m.Caminho,
+                StringComparer.OrdinalIgnoreCase);
+
+            List<string> caminhos = EhFavoritos
+                ? _database.ListarMusicasFavoritas()
+                : _database.ListarMusicasDaPlaylist(_playlistAtual!.Id);
+
+            _musicasOriginais = caminhos
+            .Where(porCaminho.ContainsKey)
+.Select(caminho => porCaminho[caminho])
+                .ToList();
+
+            Repovoar(AplicarOrdem(_musicasOriginais));
         }
 
         [RelayCommand]
         private void RemoverMusica(Music musica)
         {
-            if (_playlistAtual == null || EhComLetra) return;
-
-            if (EhFavoritos) {
-                _database.AlternarGosto(musica.Caminho, false);
-                AtualizarCapaFavoritos();
-            }
-            else {
-                int musicaId = _database.ObterIdMusicaPorCaminho(musica.Caminho);
-                if (musicaId == -1) return;
-                _database.RemoverMusicaDaPlaylist(_playlistAtual.Id, musicaId);
-                AtualizarCapa(_playlistAtual);
-            }
-
-            var itensAtuais = Musicas.Where(m => m.Caminho != musica.Caminho).ToList();
-            Musicas.Clear();
-            foreach (Music m in itensAtuais) Musicas.Add(m);
+            RemoverMusicaEscolhida(new List<Music> { musica });
         }
 
         [RelayCommand]
@@ -284,6 +403,35 @@ namespace Project_Kitsune.ViewModels.ShellPages
             Random.Shared.Shuffle(embaralhada);
 
             PlayerViewModel.TocarMusica(embaralhada[0], embaralhada.ToList());
+        }
+
+        [RelayCommand]
+        private void MostrarPainelOrdenacao()
+        {
+            MostrarOrdenacao = !MostrarOrdenacao;
+        }
+
+        [RelayCommand]
+        private void FecharPainelOrdenacao()
+        {
+            MostrarOrdenacao = false;
+        }
+
+        [RelayCommand]
+        private void AbrirPainelRemover()
+        {
+            MostrarPainelRemover = true;
+            NumeroSelecionadas = 0;
+
+            _musicasParaRemoverOriginal = Musicas.ToList();
+            TextoPesquisaRemover = string.Empty;
+        }
+
+        [RelayCommand]
+        private void FecharPainelRemover()
+        {
+            NumeroSelecionadas = 0;
+            MostrarPainelRemover = false;
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

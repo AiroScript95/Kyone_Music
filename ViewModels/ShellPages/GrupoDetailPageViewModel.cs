@@ -1,11 +1,12 @@
 ﻿using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
-using Project_Kitsune.Models;
+using KyoneMusic.Models;
+using KyoneMusic.Helpers;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace Project_Kitsune.ViewModels.ShellPages
+namespace KyoneMusic.ViewModels.ShellPages
 {
     public partial class GrupoDetailPageViewModel : INotifyPropertyChanged
     {
@@ -33,7 +34,7 @@ namespace Project_Kitsune.ViewModels.ShellPages
             private set { _capa = value; OnPropertyChanged(); }
         }
 
-        public int NumMusicas => Musicas.Count;
+        public string NumMusicas => TextoHelper.Texto("Str_NumMusicas", Musicas.Count.ToString());
 
         public string DuracaoTotalFormatada {
             get {
@@ -58,7 +59,7 @@ namespace Project_Kitsune.ViewModels.ShellPages
 
         public void Carregar(GrupoMusicas grupo)
         {
-            Nome = grupo.Nome;
+            Nome = TextoHelper.NormalizarTexto(grupo.Nome);
             Capa = grupo.Capa;
             Musicas.Clear();
             foreach (Music m in grupo.Musicas) Musicas.Add(m);

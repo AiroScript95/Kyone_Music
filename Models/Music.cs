@@ -1,9 +1,8 @@
 ﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace Project_Kitsune.Models
+namespace KyoneMusic.Models
 {
-    // Representa uma única linha de letra com timestamp
     public class LinhaLetra
     {
         public TimeSpan Tempo { get; set; }
@@ -16,7 +15,22 @@ namespace Project_Kitsune.Models
         Embutida,
         ArquivoLrc,
         Lrclib,
-        Kugou
+        Kugou,
+        lyricsOvh
+    }
+
+    public static class FontesLetraInfo
+    {
+        public static (string? Nome, string? Url) Obter(FonteLetra fonte) => fonte switch
+        {
+            FonteLetra.Lrclib => ("LRCLIB", "https://lrclib.net"),
+            FonteLetra.Kugou => ("Kugou", "https://www.kugou.com"),
+            FonteLetra.lyricsOvh => ("lyrics.ovh", "https://lyrics.ovh"),
+            FonteLetra.Embutida => (null, null),
+            FonteLetra.ArquivoLrc => (null, null),
+            FonteLetra.Nenhuma => (null, null),
+            _ => (null, null),
+        };
     }
 
     public class Letra
@@ -28,6 +42,7 @@ namespace Project_Kitsune.Models
         public FonteLetra Fonte { get; set; }
         public bool TemTimestampsReais { get; set; }
         public bool Sincronizada => Linhas.Count > 0 && TemTimestampsReais;
+        public bool Editada { get; set; }
     }
 
     public class Music : INotifyPropertyChanged
@@ -73,11 +88,20 @@ namespace Project_Kitsune.Models
             set { if (_gosto != value) { _gosto = value; OnPropertyChanged(); } }
         }
 
+        private int _vezesTocada;
+
+        public int VezesTocada {
+            get => _vezesTocada;
+            set {
+                _vezesTocada = value;
+                OnPropertyChanged();
+            }
+        }
+
         public string Genero { get; set; } = string.Empty;
         public TimeSpan Duracao { get; set; }
         public TimeSpan DuracaoArredondada { get; set; }
         public DateTime DataAdicionado { get; set; }
-        public int VezesTocada { get; set; }
         public byte[] Image { get; set; } = Array.Empty<byte>();
         public Letra? LetraAtual { get; set; }
 

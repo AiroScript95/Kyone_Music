@@ -1,14 +1,14 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Project_Kitsune.Models;
-using Project_Kitsune.Services;
-using Project_Kitsune.ViewModels;
-using Project_Kitsune.ViewModels.ShellPages;
+using KyoneMusic.Models;
+using KyoneMusic.Services;
+using KyoneMusic.ViewModels;
+using KyoneMusic.ViewModels.ShellPages;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace Project_Kitsune.Views.ShellPages
+namespace KyoneMusic.Views.ShellPages
 {
     /// <summary>
     /// Interaction logic for MusicListPage.xaml
@@ -124,14 +124,14 @@ namespace Project_Kitsune.Views.ShellPages
 
                 if (sender is FrameworkElement { DataContext: Music musica }
                     && musica.Caminho == playerViewModel.MusicaAtual?.Caminho) {
-                    e.Handled = true; // música a tocar: não abre menu
+                    e.Handled = true;
                     return;
                 }
 
                 playerViewModel.CarregarPlaylistsDisponiveis();
             }
             catch (Exception ex) {
-                MessageBox.Show(ex.ToString());
+                MessageBox.Show(ex.Message);
             }
         }
 

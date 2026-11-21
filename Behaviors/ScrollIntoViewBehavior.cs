@@ -3,7 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace Project_Kitsune.Behaviors
+namespace KyoneMusic.Behaviors
 {
     public class ScrollGrupoViewBehavior : Behavior<ItemsControl>
     {
@@ -25,7 +25,6 @@ namespace Project_Kitsune.Behaviors
                     if (index >= 0) {
                         var scrollViewer = GetScrollViewer(behavior.AssociatedObject);
                         if (scrollViewer != null) {
-                            // Tenta pegar o container visual se já estiver gerado
                             if (behavior.AssociatedObject.ItemContainerGenerator.ContainerFromIndex(index) is FrameworkElement item) {
                                 item.UpdateLayout();
                                 double itemHeight = item.TransformToAncestor(scrollViewer).Transform(new Point(0, 0)).Y;
@@ -33,12 +32,10 @@ namespace Project_Kitsune.Behaviors
                                 scrollViewer.ScrollToVerticalOffset(targetOffset);
                             }
                             else {
-                                // Se estiver virtualizado, força o painel a trazer para a vista pelo índice
                                 if (ItemContainerGeneratorHelper(behavior.AssociatedObject, index) is FrameworkElement generatedItem) {
                                     generatedItem.BringIntoView();
                                 }
                                 else {
-                                    // Fallback por estimativa de linha (cada linha tem aprox 132px com margens)
                                     int itensPorLinha = Math.Max(1, (int)( scrollViewer.ViewportWidth / 332 ));
                                     int linha = index / itensPorLinha;
                                     scrollViewer.ScrollToVerticalOffset(linha * 132);

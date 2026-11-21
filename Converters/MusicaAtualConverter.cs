@@ -1,8 +1,8 @@
-﻿using Project_Kitsune.Models;
+﻿using KyoneMusic.Models;
 using System.Globalization;
 using System.Windows.Data;
 
-namespace Project_Kitsune.Converters
+namespace KyoneMusic.Converters
 {
     public class MusicaAtualConverter : IMultiValueConverter
     {

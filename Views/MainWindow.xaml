@@ -1,4 +1,4 @@
-﻿<Window x:Class="Project_Kitsune.Views.MainWindow"
+﻿<Window x:Class="KyoneMusic.Views.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -6,21 +6,22 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         xmlns:svg="http://sharpvectors.codeplex.com/svgc/"
-        xmlns:vm="clr-namespace:Project_Kitsune.ViewModels"
-        xmlns:views="clr-namespace:Project_Kitsune.Views"
-        xmlns:converters="clr-namespace:Project_Kitsune.Converters"
-        xmlns:viewmodels="clr-namespace:Project_Kitsune.ViewModels"
+        xmlns:vm="clr-namespace:KyoneMusic.ViewModels"
+        xmlns:views="clr-namespace:KyoneMusic.Views"
+        xmlns:converters="clr-namespace:KyoneMusic.Converters"
+        xmlns:viewmodels="clr-namespace:KyoneMusic.ViewModels"
         xmlns:ctzex="urn:controlzex"
+        d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
         mc:Ignorable="d"
-        Title="Kitsune Player"
-        Height="700"
+        Title="Kyone Music"
         WindowState="Normal"
         WindowStartupLocation="CenterScreen"
         ResizeMode="CanResize"
         AllowsTransparency="False"
         Background="Transparent"
         Focusable="True"
-        Width="1200" MinWidth="980" MinHeight="680">
+        FontFamily="{DynamicResource FonteUI}"
+        Width="1200" Height="700" MinWidth="1000" MinHeight="680">
     <Window.Resources>
         <DataTemplate DataType="{x:Type vm:LoadingViewModel}">
             <views:LoadingScreem />
@@ -42,9 +43,6 @@
     </Window.Style>
 
     <Grid>
-        <Grid.CacheMode>
-            <BitmapCache RenderAtScale="1" />
-        </Grid.CacheMode>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -59,7 +57,7 @@
 
                 <!-- タイトル文字列（WindowChromeがnullのときも出たまま） -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="8,0">
-                    <Rectangle Width="52" Height="35" Fill="{DynamicResource TextMutedBrush}"/>
+                    <!--<Rectangle Width="52" Height="35" Fill="{DynamicResource TextMutedBrush}" />-->
                 </StackPanel>
 
                 <!-- トグルボタン（必要に応じて表示/非表示を切り替え可能） -->
@@ -67,11 +65,21 @@
                 <Grid x:Name="PesquisaRoot" Grid.Column="1" Width="Auto"
                       VerticalAlignment="Center" HorizontalAlignment="Center"
                       WindowChrome.IsHitTestVisibleInChrome="True">
+                    <Grid.Style>
+                        <Style TargetType="Grid">
+                            <Setter Property="Visibility" Value="Visible" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Player.MostrarLetra}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
 
                     <TextBox x:Name="SearBar" Style="{StaticResource PesquisaTextBox}"
                              Width="360" Height="34" Grid.Column="1"
                              Text="{Binding TextoPesquisa, UpdateSourceTrigger=PropertyChanged}"
-                             FontFamily="{DynamicResource FonteInter}"
+                             FontSize="12"
                              WindowChrome.IsHitTestVisibleInChrome="True"
                              GotKeyboardFocus="SearBar_GotKeyboardFocus"
                              PreviewKeyDown="SearBar_PreviewKeyDown">
@@ -157,10 +165,10 @@
                                                        VerticalAlignment="Center"
                                                        Stretch="UniformToFill" />
 
-                                                <iconPacks:PackIconBoxIcons Kind="RegularMusicAlt" Width="18" Height="18"
-                                                                            Foreground="{DynamicResource TextMutedBrush}"
-                                                                            HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                                            Visibility="{Binding Image, Converter={StaticResource NullToVisibilityConverter}}" />
+                                                <iconPacks:PackIconPhosphorIcons Kind="MusicNotesFill" Width="18" Height="18"
+                                                                                 Foreground="{DynamicResource TextMutedBrush}"
+                                                                                 HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                                 Visibility="{Binding Image, Converter={StaticResource NullToVisibilityConverter}}" />
                                             </Grid>
                                         </Border>
 
@@ -179,16 +187,54 @@
                                                 ContextMenu="{StaticResource MusicaContextMenu}"
                                                 ContextMenuOpening="TresPontos_ContextMenuOpening"
                                                 Click="TresPontos_Click">
-                                            <iconPacks:PackIconBoxIcons Kind="SolidDotsVertical"
-                                                                        Width="14" Height="14"
-                                                                        Foreground="{DynamicResource TextMutedBrush}" />
+                                            <iconPacks:PackIconPhosphorIcons Kind="DotsThreeVerticalBold"
+                                                                             Width="14" Height="14"
+                                                                             Foreground="{DynamicResource TextMutedBrush}" />
                                         </Button>
                                     </Grid>
                                 </Border>
                             </DataTemplate>
 
                             <!-- Artistas e Álbuns -->
-                            <DataTemplate x:Key="GrupoResultadoTemplate">
+                            <DataTemplate x:Key="GrupoArtistaResultadoTemplate">
+                                <Button Style="{StaticResource LinhaPesquisa}"
+                                        Command="{Binding Tag, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        CommandParameter="{Binding}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <Border Width="46" Height="46" CornerRadius="4" ClipToBounds="True"
+                                                Style="{StaticResource BorderCircularClip}"
+                                                Background="{DynamicResource SurfaceAltBrush}">
+                                            <Grid>
+                                                <Image Source="{Binding Capa, Converter={StaticResource BytesParaImagemConverter}, ConverterParameter=120}"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"
+                                                       Stretch="UniformToFill" />
+                                                <iconPacks:PackIconPhosphorIcons Kind="MusicNotesFill" Width="18" Height="18"
+                                                                                 Foreground="{DynamicResource TextMutedBrush}"
+                                                                                 HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                                 Visibility="{Binding Capa, Converter={StaticResource NullToVisibilityConverter}}" />
+                                            </Grid>
+                                        </Border>
+
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12,0">
+                                            <TextBlock  Text="{Binding Nome}"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                                       TextTrimming="CharacterEllipsis" Margin="0,4" />
+                                            <Border Background="{DynamicResource SurfaceRaisedBrush}" HorizontalAlignment="Left" Padding="4,1" CornerRadius="8">
+                                                <TextBlock Text="{DynamicResource Str_Artistas}" Foreground="{DynamicResource TextMutedBrush}" />
+                                            </Border>
+                                        </StackPanel>
+                                    </Grid>
+                                </Button>
+                            </DataTemplate>
+
+                            <DataTemplate x:Key="GrupoAlbumResultadoTemplate">
                                 <Button Style="{StaticResource LinhaPesquisa}"
                                         Command="{Binding Tag, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                         CommandParameter="{Binding}">
@@ -206,18 +252,22 @@
                                                        HorizontalAlignment="Center"
                                                        VerticalAlignment="Center"
                                                        Stretch="UniformToFill" />
-                                                <iconPacks:PackIconBoxIcons Kind="RegularMusicAlt" Width="18" Height="18"
-                                                                            Foreground="{DynamicResource TextMutedBrush}"
-                                                                            HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                                            Visibility="{Binding Capa, Converter={StaticResource NullToVisibilityConverter}}" />
+                                                <iconPacks:PackIconPhosphorIcons Kind="MusicNotesFill" Width="18" Height="18"
+                                                                                 Foreground="{DynamicResource TextMutedBrush}"
+                                                                                 HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                                 Visibility="{Binding Capa, Converter={StaticResource NullToVisibilityConverter}}" />
                                             </Grid>
                                         </Border>
 
-                                        <TextBlock Grid.Column="1" Text="{Binding Nome}" Margin="12,0"
-                                                   VerticalAlignment="Center" FontWeight="SemiBold"
-                                                   FontFamily="{StaticResource FonteInter}"
-                                                   Foreground="{DynamicResource TextPrimaryBrush}"
-                                                   TextTrimming="CharacterEllipsis" />
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12,0">
+                                            <TextBlock  Text="{Binding Nome}"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                                       TextTrimming="CharacterEllipsis" Margin="0,4" />
+                                            <Border Background="{DynamicResource SurfaceRaisedBrush}" HorizontalAlignment="Left" Padding="4,1" CornerRadius="8">
+                                                <TextBlock Text="{DynamicResource Str_Album}" Foreground="{DynamicResource TextMutedBrush}" />
+                                            </Border>
+                                        </StackPanel>
                                     </Grid>
                                 </Button>
                             </DataTemplate>
@@ -236,26 +286,30 @@
                                         <Border Width="46" Height="46" CornerRadius="4" Style="{StaticResource BorderClip}"
                                                 Background="{DynamicResource SurfaceAltBrush}">
 
-                                            <iconPacks:PackIconBoxIcons Kind="SolidMusicLibrary" Width="18" Height="18"
-                                                                        Foreground="{DynamicResource TextMutedBrush}"
-                                                                        HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            <iconPacks:PackIconPhosphorIcons Kind="PlaylistBold" Width="18" Height="18"
+                                                                             Foreground="{DynamicResource TextMutedBrush}"
+                                                                             HorizontalAlignment="Center" VerticalAlignment="Center" />
                                         </Border>
 
-                                        <TextBlock Grid.Column="1" Margin="12,0" VerticalAlignment="Center"
-                                                   FontWeight="SemiBold" FontFamily="{StaticResource FonteInter}"
-                                                   Foreground="{DynamicResource TextPrimaryBrush}"
-                                                   TextTrimming="CharacterEllipsis">
-                                            <TextBlock.Style>
-                                                <Style TargetType="TextBlock">
-                                                    <Setter Property="Text" Value="{Binding Name}" />
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding Name}" Value="Favoritos">
-                                                            <Setter Property="Text" Value="{DynamicResource Str_Favoritos}" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </TextBlock.Style>
-                                        </TextBlock>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12,0">
+                                            <TextBlock FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                                       TextTrimming="CharacterEllipsis" Margin="0,4">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Text" Value="{Binding Name}" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Name}" Value="Favoritos">
+                                                                <Setter Property="Text" Value="{DynamicResource Str_Favoritos}" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                            <Border Background="{DynamicResource SurfaceRaisedBrush}" HorizontalAlignment="Left" Padding="4,1" CornerRadius="8">
+                                                <TextBlock Text="{DynamicResource Str_Playlists}" Foreground="{DynamicResource TextMutedBrush}" />
+                                            </Border>
+                                        </StackPanel>
                                     </Grid>
                                 </Button>
                             </DataTemplate>
@@ -263,7 +317,8 @@
 
                         <Popup.Style>
                             <Style TargetType="Popup">
-                                <Setter Property="IsOpen" Value="{Binding PesquisaAberta, Mode=OneWay}" />
+                                <!--<Setter Property="IsOpen" Value="{Binding PesquisaAberta, Mode=OneWay}" />-->
+                                <Setter Property="IsOpen" Value="True" />
                                 <Style.Triggers>
                                     <MultiDataTrigger>
                                         <MultiDataTrigger.Conditions>
@@ -278,11 +333,9 @@
                             </Style>
                         </Popup.Style>
                         <Grid  Width="{Binding ActualWidth, ElementName=SearBar}">
+                            <Border Background="{DynamicResource SurfaceAltBrush}" CornerRadius="4" Padding="4" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush2}">
 
-                            <Border x:Name="Container" Width="auto"
-                                    Margin="0,4,0,0" CornerRadius="8" BorderThickness="0.5" BorderBrush="{DynamicResource BorderBrush2}"
-                                    Background="{DynamicResource GradientBackground}" Padding="4">
-                                <StackPanel>
+                                <StackPanel Margin="4">
                                     <StackPanel Style="{StaticResource SecaoPesquisa}" Tag="{Binding ResultadosMusica.Count}">
                                         <ItemsControl ItemsSource="{Binding ResultadosMusica}">
                                             <ItemsControl.ItemTemplate>
@@ -304,13 +357,13 @@
                                     <StackPanel Style="{StaticResource SecaoPesquisa}" Tag="{Binding ResultadosArtistas.Count}">
                                         <ItemsControl ItemsSource="{Binding ResultadosArtistas}"
                                                       Tag="{Binding AbrirArtistaCommand}"
-                                                      ItemTemplate="{StaticResource GrupoResultadoTemplate}" />
+                                                      ItemTemplate="{StaticResource GrupoArtistaResultadoTemplate}" />
                                     </StackPanel>
 
                                     <StackPanel Style="{StaticResource SecaoPesquisa}" Tag="{Binding ResultadosAlbuns.Count}">
                                         <ItemsControl ItemsSource="{Binding ResultadosAlbuns}"
                                                       Tag="{Binding AbrirAlbumCommand}"
-                                                      ItemTemplate="{StaticResource GrupoResultadoTemplate}" />
+                                                      ItemTemplate="{StaticResource GrupoAlbumResultadoTemplate}" />
                                     </StackPanel>
 
                                     <StackPanel Style="{StaticResource SecaoPesquisa}" Tag="{Binding ResultadosPlaylists.Count}">
